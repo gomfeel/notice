@@ -1,0 +1,17 @@
+﻿# Node
+node_modules/
+.next/
+out/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+
+# Env
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
