@@ -77,6 +77,9 @@ export default function IntakeForm() {
       headers: requestHeaders(),
     });
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? "\uCD5C\uADFC \uC218\uC9D1 \uD56D\uBAA9\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+    }
     setItems(data.items ?? []);
     setSource(data.source ?? "unknown");
   }
@@ -88,6 +91,9 @@ export default function IntakeForm() {
       headers: requestHeaders(),
     });
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? "\uD3F4\uB354 \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+    }
     setFolders(data.items ?? []);
   }
 
@@ -99,7 +105,13 @@ export default function IntakeForm() {
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      loadItems().catch(() => {});
+      loadItems().catch((e) => {
+        setResult(
+          e instanceof Error
+            ? e.message
+            : "\uCD5C\uADFC \uC218\uC9D1 \uD56D\uBAA9 \uC790\uB3D9 \uC0C8\uB85C\uACE0\uCE68\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4."
+        );
+      });
     }, 15000);
 
     return () => window.clearInterval(intervalId);
@@ -209,6 +221,10 @@ export default function IntakeForm() {
       });
 
       const data = await response.json();
+      if (!response.ok) {
+        setResult(data.error ?? "\uC218\uC9D1 \uC694\uCCAD\uC744 \uCC98\uB9AC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+        return;
+      }
       setResult(JSON.stringify(data, null, 2));
       await loadItems();
     } catch (error) {

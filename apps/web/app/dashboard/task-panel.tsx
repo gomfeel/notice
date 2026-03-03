@@ -63,6 +63,9 @@ export default function TaskPanel() {
       headers: requestHeaders(),
     });
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? "\uD560 \uC77C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+    }
     setTasks(data.items ?? []);
     setSource(data.source ?? "unknown");
   }
@@ -75,7 +78,9 @@ export default function TaskPanel() {
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      loadTasks().catch(() => {});
+      loadTasks().catch((e) => {
+        setError(e instanceof Error ? e.message : "\uD560 \uC77C \uBAA9\uB85D \uC790\uB3D9 \uC0C8\uB85C\uACE0\uCE68\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.");
+      });
     }, 15000);
 
     return () => window.clearInterval(intervalId);
