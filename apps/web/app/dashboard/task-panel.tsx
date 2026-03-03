@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type TaskItem = {
   id: string;
@@ -10,6 +10,8 @@ type TaskItem = {
   startsAt?: string | null;
   endsAt?: string | null;
 };
+
+type TaskFilter = "all" | "completed" | "incomplete";
 
 function sourceLabel(source: string) {
   if (source === "supabase") return "Supabase";
@@ -34,6 +36,9 @@ export default function TaskPanel() {
   const [source, setSource] = useState("unknown");
   const [error, setError] = useState("");
 
+  const [filter, setFilter] = useState<TaskFilter>("all");
+  const [query, setQuery] = useState("");
+
   async function loadTasks() {
     const response = await fetch("/api/tasks", { method: "GET", cache: "no-store" });
     const data = await response.json();
@@ -46,6 +51,20 @@ export default function TaskPanel() {
       setError("\uD560 \uC77C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
     });
   }, []);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const byStatus =
+        filter === "all" ||
+        (filter === "completed" && task.isCompleted) ||
+        (filter === "incomplete" && !task.isCompleted);
+
+      const q = query.trim().toLowerCase();
+      const byQuery = !q || task.content.toLowerCase().includes(q);
+
+      return byStatus && byQuery;
+    });
+  }, [tasks, filter, query]);
 
   async function createTask() {
     if (!content.trim()) {
@@ -129,10 +148,24 @@ export default function TaskPanel() {
         </div>
       </div>
 
+      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <select value={filter} onChange={(e) => setFilter(e.target.value as TaskFilter)}>
+          <option value="all">\uC804\uCCB4</option>
+          <option value="incomplete">\uBBF8\uC644\uB8CC</option>
+          <option value="completed">\uC644\uB8CC</option>
+        </select>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="\uD560 \uC77C \uAC80\uC0C9"
+          style={{ minWidth: 220 }}
+        />
+      </div>
+
       {error ? <p style={{ color: "#b00020" }}>{error}</p> : null}
 
       <ul style={{ paddingLeft: 18, marginTop: 12 }}>
-        {tasks.map((task) => (
+        {filteredTasks.map((task) => (
           <li key={task.id} style={{ marginBottom: 8 }}>
             <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
@@ -151,7 +184,7 @@ export default function TaskPanel() {
           </li>
         ))}
       </ul>
-      {tasks.length === 0 ? <p>\uB4F1\uB85D\uB41C \uD560 \uC77C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</p> : null}
+      {filteredTasks.length === 0 ? <p>\uC870\uAC74\uC5D0 \uB9DE\uB294 \uD560 \uC77C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</p> : null}
     </section>
   );
 }
