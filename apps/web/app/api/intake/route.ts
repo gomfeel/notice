@@ -16,6 +16,15 @@ function getDefaultFolders() {
   return listFolderItems().map((item) => ({ id: item.id, name: item.name, description: item.description }));
 }
 
+function isValidHttpUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   const user = resolveRequestUserId(request);
   if (!user.ok) {
@@ -59,10 +68,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const incomingFolders = Array.isArray(body?.folders) ? body.folders : [];
     const folders = incomingFolders.length > 0 ? incomingFolders : getDefaultFolders();
-    const { url, title, description } = body;
+    const url = String(body?.url ?? "").trim();
+    const { title, description } = body;
 
     if (!url) {
       return Response.json({ error: "URL\uC740 \uD544\uC218\uC785\uB2C8\uB2E4." }, { status: 400 });
+    }
+    if (!isValidHttpUrl(url)) {
+      return Response.json({ error: "\uC62C\uBC14\uB978 URL\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694. (http/https)" }, { status: 400 });
     }
 
     const metadata = await fetchMetadataFromUrl(url);

@@ -175,6 +175,10 @@ export default function TaskPanel() {
       setError("\uD560 \uC77C \uB0B4\uC6A9\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694.");
       return;
     }
+    if (startsAt && endsAt && new Date(endsAt).getTime() < new Date(startsAt).getTime()) {
+      setError("\uC885\uB8CC \uC2DC\uAC04\uC740 \uC2DC\uC791 \uC2DC\uAC04 \uC774\uD6C4\uC5EC\uC57C \uD569\uB2C8\uB2E4.");
+      return;
+    }
 
     setError("");
     const response = await fetch("/api/tasks", {

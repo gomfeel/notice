@@ -14,6 +14,14 @@ function normalizeDateTime(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+function isInvalidTimeRange(startsAt: string | null, endsAt: string | null) {
+  if (!startsAt || !endsAt) return false;
+  const start = new Date(startsAt).getTime();
+  const end = new Date(endsAt).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return true;
+  return end < start;
+}
+
 export async function GET(request: Request) {
   const user = resolveRequestUserId(request);
   if (!user.ok) {
@@ -59,6 +67,13 @@ export async function POST(request: Request) {
     const showOnLockScreen = Boolean(body?.showOnLockScreen ?? false);
     const startsAt = normalizeDateTime(body?.startsAt);
     const endsAt = normalizeDateTime(body?.endsAt);
+
+    if (isInvalidTimeRange(startsAt, endsAt)) {
+      return Response.json(
+        { error: "\uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uD655\uC778\uD574 \uC8FC\uC138\uC694. \uC885\uB8CC\uB294 \uC2DC\uC791 \uC774\uD6C4\uC5EC\uC57C \uD569\uB2C8\uB2E4." },
+        { status: 400 }
+      );
+    }
 
     if (hasSupabaseEnv()) {
       const required = requireUserIdForSupabase(user.userId);
