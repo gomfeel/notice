@@ -221,6 +221,16 @@ export async function insertTaskToSupabase(payload: {
 }
 
 export async function updateTaskCompletionInSupabase(id: string, isCompleted: boolean) {
+  return updateTaskFieldsInSupabase(id, { is_completed: isCompleted });
+}
+
+export async function updateTaskFieldsInSupabase(
+  id: string,
+  fields: {
+    is_completed?: boolean;
+    show_on_lock_screen?: boolean;
+  }
+) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks?id=eq.${encodeURIComponent(id)}`, {
@@ -231,7 +241,7 @@ export async function updateTaskCompletionInSupabase(id: string, isCompleted: bo
       Authorization: `Bearer ${supabaseAnonKey}`,
       Prefer: "return=representation",
     },
-    body: JSON.stringify({ is_completed: isCompleted }),
+    body: JSON.stringify(fields),
   });
 
   if (!response.ok) {

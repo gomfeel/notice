@@ -13,6 +13,7 @@ type TaskItem = {
 };
 
 type TaskFilter = "all" | "completed" | "incomplete";
+type TaskLockFilter = "all" | "lock_on" | "lock_off";
 
 function sourceLabel(source: string) {
   if (source === "supabase") return "\uC11C\uBC84 DB";
@@ -42,6 +43,7 @@ export default function TaskPanel() {
   const [error, setError] = useState("");
 
   const [filter, setFilter] = useState<TaskFilter>("all");
+  const [lockFilter, setLockFilter] = useState<TaskLockFilter>("all");
   const [query, setQuery] = useState("");
 
   async function loadTasks() {
@@ -68,10 +70,14 @@ export default function TaskPanel() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const taskFilter = params.get("task_filter");
+    const taskLock = params.get("task_lock");
     const taskQ = params.get("task_q");
 
     if (taskFilter === "all" || taskFilter === "completed" || taskFilter === "incomplete") {
       setFilter(taskFilter as TaskFilter);
+    }
+    if (taskLock === "all" || taskLock === "lock_on" || taskLock === "lock_off") {
+      setLockFilter(taskLock as TaskLockFilter);
     }
     if (taskQ) {
       setQuery(taskQ);
@@ -85,6 +91,11 @@ export default function TaskPanel() {
     } else {
       params.delete("task_filter");
     }
+    if (lockFilter !== "all") {
+      params.set("task_lock", lockFilter);
+    } else {
+      params.delete("task_lock");
+    }
 
     if (query.trim()) {
       params.set("task_q", query.trim());
@@ -94,7 +105,7 @@ export default function TaskPanel() {
 
     const qs = params.toString();
     router.replace(qs ? `${safePathname}?${qs}` : safePathname, { scroll: false });
-  }, [filter, query, router, safePathname]);
+  }, [filter, lockFilter, query, router, safePathname]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -103,12 +114,17 @@ export default function TaskPanel() {
         (filter === "completed" && task.isCompleted) ||
         (filter === "incomplete" && !task.isCompleted);
 
+      const byLock =
+        lockFilter === "all" ||
+        (lockFilter === "lock_on" && Boolean(task.showOnLockScreen)) ||
+        (lockFilter === "lock_off" && !task.showOnLockScreen);
+
       const q = query.trim().toLowerCase();
       const byQuery = !q || task.content.toLowerCase().includes(q);
 
-      return byStatus && byQuery;
+      return byStatus && byLock && byQuery;
     });
-  }, [tasks, filter, query]);
+  }, [tasks, filter, lockFilter, query]);
 
   async function createTask() {
     if (!content.trim()) {
@@ -157,6 +173,22 @@ export default function TaskPanel() {
     await loadTasks();
   }
 
+  async function toggleLockScreen(task: TaskItem) {
+    const response = await fetch(`/api/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showOnLockScreen: !Boolean(task.showOnLockScreen) }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.error ?? "\uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+
+    await loadTasks();
+  }
+
   return (
     <section style={{ marginTop: 28 }}>
       <h2>\uD560 \uC77C \uAD00\uB9AC</h2>
@@ -198,6 +230,11 @@ export default function TaskPanel() {
           <option value="incomplete">\uBBF8\uC644\uB8CC</option>
           <option value="completed">\uC644\uB8CC</option>
         </select>
+        <select value={lockFilter} onChange={(e) => setLockFilter(e.target.value as TaskLockFilter)}>
+          <option value="all">\uC7A0\uAE08\uD654\uBA74 \uC804\uCCB4</option>
+          <option value="lock_on">\uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC</option>
+          <option value="lock_off">\uC7A0\uAE08\uD654\uBA74 \uBBF8\uD45C\uC2DC</option>
+        </select>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -224,6 +261,13 @@ export default function TaskPanel() {
             <div style={{ marginLeft: 24, fontSize: 13, opacity: 0.85 }}>
               <div>\uC2DC\uC791: {formatDate(task.startsAt)}</div>
               <div>\uC885\uB8CC: {formatDate(task.endsAt)}</div>
+              <div>
+                \uC7A0\uAE08\uD654\uBA74: {task.showOnLockScreen ? "\uD45C\uC2DC" : "\uBBF8\uD45C\uC2DC"}
+                {" "}
+                <button onClick={() => toggleLockScreen(task)} style={{ padding: "4px 8px", marginLeft: 6 }}>
+                  {task.showOnLockScreen ? "\uBBF8\uD45C\uC2DC\uB85C \uBCC0\uACBD" : "\uD45C\uC2DC\uB85C \uBCC0\uACBD"}
+                </button>
+              </div>
             </div>
           </li>
         ))}
