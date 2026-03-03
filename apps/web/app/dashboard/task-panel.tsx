@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 type TaskItem = {
   id: string;
@@ -14,7 +15,7 @@ type TaskItem = {
 type TaskFilter = "all" | "completed" | "incomplete";
 
 function sourceLabel(source: string) {
-  if (source === "supabase") return "Supabase";
+  if (source === "supabase") return "\uC11C\uBC84 DB";
   if (source === "memory") return "\uBA54\uBAA8\uB9AC";
   if (source === "memory-fallback") return "\uBA54\uBAA8\uB9AC(\uB300\uCCB4)";
   return "\uC54C \uC218 \uC5C6\uC74C";
@@ -28,6 +29,10 @@ function formatDate(value?: string | null) {
 }
 
 export default function TaskPanel() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const safePathname = pathname ?? "/dashboard";
+
   const [content, setContent] = useState("");
   const [showOnLockScreen, setShowOnLockScreen] = useState(false);
   const [startsAt, setStartsAt] = useState("");
@@ -51,6 +56,45 @@ export default function TaskPanel() {
       setError("\uD560 \uC77C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
     });
   }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadTasks().catch(() => {});
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const taskFilter = params.get("task_filter");
+    const taskQ = params.get("task_q");
+
+    if (taskFilter === "all" || taskFilter === "completed" || taskFilter === "incomplete") {
+      setFilter(taskFilter as TaskFilter);
+    }
+    if (taskQ) {
+      setQuery(taskQ);
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (filter !== "all") {
+      params.set("task_filter", filter);
+    } else {
+      params.delete("task_filter");
+    }
+
+    if (query.trim()) {
+      params.set("task_q", query.trim());
+    } else {
+      params.delete("task_q");
+    }
+
+    const qs = params.toString();
+    router.replace(qs ? `${safePathname}?${qs}` : safePathname, { scroll: false });
+  }, [filter, query, router, safePathname]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {

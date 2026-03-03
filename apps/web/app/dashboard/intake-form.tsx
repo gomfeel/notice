@@ -23,7 +23,7 @@ type FolderItem = {
 };
 
 function sourceLabel(source: string) {
-  if (source === "supabase") return "Supabase";
+  if (source === "supabase") return "\uC11C\uBC84 DB";
   if (source === "memory") return "\uBA54\uBAA8\uB9AC";
   if (source === "memory-fallback") return "\uBA54\uBAA8\uB9AC(\uB300\uCCB4)";
   return "\uC54C \uC218 \uC5C6\uC74C";
@@ -80,6 +80,14 @@ export default function IntakeForm() {
     Promise.all([loadItems(), loadFolders()]).catch(() => {
       setResult("\uCD08\uAE30 \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
     });
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadItems().catch(() => {});
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
