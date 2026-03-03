@@ -19,7 +19,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify_ios_share_extension_setu
 - `Runner/AppDelegate.swift` 존재
 - `ShareExtension/ShareViewController.swift` 존재
 - `ShareExtension/Info.plist` 존재
-- `Runner/Info.plist` 존재
+- `Runner/Info.plist` 존재(프로젝트 생성 후)
 - AppDelegate MethodChannel(`notice/share_extension`) 설정
 - ShareViewController App Group 문자열
 - Runner URL Scheme
@@ -28,3 +28,6 @@ powershell -ExecutionPolicy Bypass -File scripts/verify_ios_share_extension_setu
 ## 판정
 - `FAIL`: 즉시 수정 필요
 - `WARN`: Xcode 설정에서 추가 확인 필요
+
+## 참고
+- `flutter create` 이전에는 `Runner.xcodeproj`, `Runner/Info.plist`가 없어 WARN이 정상입니다.

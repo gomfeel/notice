@@ -9,7 +9,9 @@
 - `apps/mobile/ios/ShareExtension/ShareViewController.swift`
 - `apps/mobile/ios/ShareExtension/Info.plist.template`
 - `apps/mobile/ios/Runner/AppDelegate.template.swift`
+- `apps/mobile/ios/Runner/Runner.entitlements.template`
 - `apps/mobile/lib/features/share_extension/infrastructure/shared_url_channel.dart`
+- `apps/mobile/ios/ShareExtension/ShareExtension.entitlements.template`
 - `scripts/setup_ios_share_extension.ps1` (템플릿 적용 보조)
 - `scripts/verify_ios_share_extension_setup.ps1` (설정 검증)
 
@@ -31,9 +33,20 @@
 powershell -ExecutionPolicy Bypass -File scripts/setup_ios_share_extension.ps1
 ```
 
-이 스크립트는 템플릿 파일을 아래 위치로 복사합니다.
+이 스크립트는 아래를 자동 반영합니다.
 - `apps/mobile/ios/Runner/AppDelegate.swift`
 - `apps/mobile/ios/ShareExtension/Info.plist`
+- `apps/mobile/ios/Runner/Runner.entitlements`
+- `apps/mobile/ios/ShareExtension/ShareExtension.entitlements`
+- `apps/mobile/ios/Runner/Info.plist` URL Scheme(파일 존재 시)
+
+옵션 예시:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_ios_share_extension.ps1 `
+  -AppGroup "group.com.gomfeel.notice" `
+  -UrlScheme "notice" `
+  -Force
+```
 
 설정 검증:
 ```powershell
