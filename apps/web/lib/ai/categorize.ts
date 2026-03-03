@@ -20,7 +20,7 @@ export async function categorizeWithEdgeFunction(payload: CategorizePayload) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return {
       ...categorizeRuleBased(payload),
-      source: "rule-based",
+      source: "규칙기반",
     };
   }
 
@@ -36,13 +36,13 @@ export async function categorizeWithEdgeFunction(payload: CategorizePayload) {
   if (!response.ok) {
     return {
       ...categorizeRuleBased(payload),
-      source: "rule-based-fallback",
+      source: "규칙기반-대체",
     };
   }
 
   const result = await response.json();
   return {
     ...result,
-    source: "edge-function",
+    source: "엣지함수",
   };
 }

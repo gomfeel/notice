@@ -1,8 +1,8 @@
-﻿import "./globals.css";
+import "./globals.css";
 
 export const metadata = {
-  title: "Notice Dashboard",
-  description: "Notice web dashboard",
+  title: "노티스 대시보드",
+  description: "노티스 웹 대시보드",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

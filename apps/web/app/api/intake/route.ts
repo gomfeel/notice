@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { categorizeWithEdgeFunction } from "../../../lib/ai/categorize";
+import { listFolderItems } from "../../../lib/folders/store";
 import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
 import {
@@ -8,7 +9,9 @@ import {
   listRecentLinksFromSupabase,
 } from "../../../lib/supabase/rest";
 
-const defaultFolders = [{ name: "stock" }, { name: "travel" }, { name: "work" }];
+function getDefaultFolders() {
+  return listFolderItems().map((item) => ({ id: item.id, name: item.name, description: item.description }));
+}
 
 export async function GET() {
   if (hasSupabaseEnv()) {
@@ -22,14 +25,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { url, title, description, folders = defaultFolders } = body;
+    const incomingFolders = Array.isArray(body?.folders) ? body.folders : [];
+    const folders = incomingFolders.length > 0 ? incomingFolders : getDefaultFolders();
+    const { url, title, description } = body;
 
     if (!url) {
-      return Response.json({ error: "url is required" }, { status: 400 });
+      return Response.json({ error: "URL은 필수입니다." }, { status: 400 });
     }
 
     const metadata = await fetchMetadataFromUrl(url);
-    const finalTitle = title || metadata.title || "Untitled";
+    const finalTitle = title || metadata.title || "제목 없음";
     const finalDescription = description || metadata.description || "";
 
     const classification = await categorizeWithEdgeFunction({
@@ -55,7 +60,7 @@ export async function POST(request: Request) {
       url,
       title: finalTitle,
       description: finalDescription,
-      selectedFolder: selectedFolderName ?? "inbox",
+      selectedFolder: selectedFolderName ?? "미분류",
       confidence: Number(classification.confidence ?? 0),
       createdAt: new Date().toISOString(),
     };
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다." },
       { status: 500 }
     );
   }

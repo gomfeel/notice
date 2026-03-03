@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 
 import "features/share_extension/presentation/share_extension_placeholder.dart";
 
@@ -8,7 +8,7 @@ class NoticeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Notice",
+      title: "노티스",
       home: const Scaffold(
         body: SafeArea(
           child: ShareExtensionPlaceholder(),

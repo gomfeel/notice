@@ -16,16 +16,16 @@ export function categorizeRuleBased(payload: CategorizePayload) {
       return {
         selectedFolder: rule.folder,
         confidence: 0.72,
-        reason: `Rule-based match: ${rule.folder}`,
+        reason: `규칙 기반 일치: ${rule.folder}`,
         suggestedNewFolder: null,
       };
     }
   }
 
   return {
-    selectedFolder: payload.folders[0]?.name ?? "Inbox",
+    selectedFolder: payload.folders[0]?.name ?? "미분류",
     confidence: 0.3,
-    reason: "No keyword match; fallback selected",
+    reason: "일치하는 키워드가 없어 기본 폴더를 선택했습니다.",
     suggestedNewFolder: payload.folders.length > 0 ? null : "기본",
   };
 }

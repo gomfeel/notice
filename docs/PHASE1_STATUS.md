@@ -3,7 +3,9 @@
 ## Implemented
 - URL intake API: `POST /api/intake`
 - Intake history API: `GET /api/intake`
+- Folder API: `GET /api/folders`, `POST /api/folders`
 - Dashboard intake form + recent items list
+- Dashboard folder list + add folder action
 - Metadata extraction helper
 - Classification path:
   - Supabase Edge Function (OpenAI `gpt-4o-mini`) when `OPENAI_API_KEY` is set
