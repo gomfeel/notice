@@ -8,4 +8,9 @@ class AppConfig {
     "NOTICE_API_TOKEN",
     defaultValue: "",
   );
+
+  static const String userId = String.fromEnvironment(
+    "NOTICE_USER_ID",
+    defaultValue: "",
+  );
 }

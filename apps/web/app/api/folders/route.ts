@@ -1,11 +1,17 @@
 import { addFolderItem, listFolderItems } from "../../../lib/folders/store";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
+import { resolveRequestUserId } from "../../../lib/security/request-context";
 import { hasSupabaseEnv, listFoldersFromSupabase } from "../../../lib/supabase/rest";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
+  }
+
   if (hasSupabaseEnv()) {
     try {
-      const result = await listFoldersFromSupabase();
+      const result = await listFoldersFromSupabase(user.userId);
       return Response.json({ source: "supabase", items: result.items });
     } catch {
       return Response.json({ source: "memory-fallback", items: listFolderItems() });

@@ -7,10 +7,12 @@ class ShareIntakeApi {
   ShareIntakeApi({
     required this.baseUrl,
     this.apiToken,
+    this.userId,
   });
 
   final String baseUrl;
   final String? apiToken;
+  final String? userId;
 
   Future<Map<String, dynamic>> intake(SharedLink link) async {
     final client = HttpClient();
@@ -19,6 +21,9 @@ class ShareIntakeApi {
       request.headers.set(HttpHeaders.contentTypeHeader, "application/json");
       if (apiToken != null && apiToken!.trim().isNotEmpty) {
         request.headers.set("x-notice-api-token", apiToken!.trim());
+      }
+      if (userId != null && userId!.trim().isNotEmpty) {
+        request.headers.set("x-notice-user-id", userId!.trim());
       }
       request.write(
         jsonEncode({

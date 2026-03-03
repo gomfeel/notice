@@ -4,6 +4,7 @@ import {
   updateTaskItemLockScreen,
 } from "../../../../lib/tasks/store";
 import { authorizeApiRequest } from "../../../../lib/security/api-token";
+import { resolveRequestUserId } from "../../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   updateTaskFieldsInSupabase,
@@ -13,6 +14,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const auth = authorizeApiRequest(request);
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
+  }
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
   }
 
   try {
@@ -34,7 +39,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       const updated = await updateTaskFieldsInSupabase(params.id, {
         ...(hasIsCompleted ? { is_completed: isCompleted } : {}),
         ...(hasShowOnLockScreen ? { show_on_lock_screen: showOnLockScreen } : {}),
-      });
+      }, user.userId);
       return Response.json({ item: updated[0] ?? updated });
     }
 

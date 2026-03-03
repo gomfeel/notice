@@ -26,6 +26,7 @@ class _ShareExtensionPlaceholderState extends State<ShareExtensionPlaceholder> {
       ShareIntakeApi(
         baseUrl: AppConfig.apiBaseUrl,
         apiToken: AppConfig.apiToken,
+        userId: AppConfig.userId,
       ),
     );
     _sharedUrlChannel = SharedUrlChannel();

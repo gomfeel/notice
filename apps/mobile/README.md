@@ -15,3 +15,4 @@ flutter create .
 ## Runtime config
 - `NOTICE_API_BASE_URL`: 수집 API 서버 주소 (`default: http://127.0.0.1:3000`)
 - `NOTICE_API_TOKEN`: API 보호 토큰 사용 시 전달
+- `NOTICE_USER_ID`: 사용자 분리 모드 사용 시 전달

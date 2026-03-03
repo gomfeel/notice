@@ -2,6 +2,12 @@ export function hasSupabaseEnv() {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
 }
 
+function applyUserScope(query: URLSearchParams, userId?: string | null) {
+  if (userId && userId.trim()) {
+    query.set("user_id", `eq.${userId.trim()}`);
+  }
+}
+
 function getSupabaseEnv() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -19,7 +25,7 @@ export async function insertLinkToSupabase(payload: {
   title?: string;
   summary?: string;
   status?: string;
-}) {
+}, userId?: string | null) {
   if (!hasSupabaseEnv()) {
     return {
       skipped: true,
@@ -37,7 +43,10 @@ export async function insertLinkToSupabase(payload: {
       Authorization: `Bearer ${supabaseAnonKey}`,
       Prefer: "return=representation",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      ...(userId ? { user_id: userId } : {}),
+    }),
   });
 
   if (!response.ok) {
@@ -48,10 +57,18 @@ export async function insertLinkToSupabase(payload: {
   return response.json();
 }
 
-export async function updateLinkStatusInSupabase(id: string, status: "unread" | "read") {
+export async function updateLinkStatusInSupabase(
+  id: string,
+  status: "unread" | "read",
+  userId?: string | null
+) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  const query = new URLSearchParams({
+    id: `eq.${id}`,
+  });
+  applyUserScope(query, userId);
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/links?id=eq.${encodeURIComponent(id)}`, {
+  const response = await fetch(`${supabaseUrl}/rest/v1/links?${query.toString()}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -70,7 +87,7 @@ export async function updateLinkStatusInSupabase(id: string, status: "unread" | 
   return response.json();
 }
 
-export async function listRecentLinksFromSupabase(limit = 20) {
+export async function listRecentLinksFromSupabase(limit = 20, userId?: string | null) {
   if (!hasSupabaseEnv()) {
     return {
       skipped: true,
@@ -85,6 +102,7 @@ export async function listRecentLinksFromSupabase(limit = 20) {
     order: "created_at.desc",
     limit: String(limit),
   });
+  applyUserScope(query, userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/links?${query.toString()}`, {
     method: "GET",
@@ -117,7 +135,7 @@ export async function listRecentLinksFromSupabase(limit = 20) {
   };
 }
 
-export async function listFoldersFromSupabase() {
+export async function listFoldersFromSupabase(userId?: string | null) {
   if (!hasSupabaseEnv()) {
     return { skipped: true, items: [] };
   }
@@ -128,6 +146,7 @@ export async function listFoldersFromSupabase() {
     order: "created_at.desc",
     limit: "100",
   });
+  applyUserScope(query, userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/folders?${query.toString()}`, {
     method: "GET",
@@ -153,7 +172,7 @@ export async function listFoldersFromSupabase() {
   return { skipped: false, items };
 }
 
-export async function listTasksFromSupabase(limit = 50) {
+export async function listTasksFromSupabase(limit = 50, userId?: string | null) {
   if (!hasSupabaseEnv()) {
     return { skipped: true, items: [] };
   }
@@ -164,6 +183,7 @@ export async function listTasksFromSupabase(limit = 50) {
     order: "created_at.desc",
     limit: String(limit),
   });
+  applyUserScope(query, userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks?${query.toString()}`, {
     method: "GET",
@@ -198,7 +218,7 @@ export async function insertTaskToSupabase(payload: {
   show_on_lock_screen?: boolean;
   starts_at?: string | null;
   ends_at?: string | null;
-}) {
+}, userId?: string | null) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks`, {
@@ -209,7 +229,10 @@ export async function insertTaskToSupabase(payload: {
       Authorization: `Bearer ${supabaseAnonKey}`,
       Prefer: "return=representation",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      ...(userId ? { user_id: userId } : {}),
+    }),
   });
 
   if (!response.ok) {
@@ -229,11 +252,16 @@ export async function updateTaskFieldsInSupabase(
   fields: {
     is_completed?: boolean;
     show_on_lock_screen?: boolean;
-  }
+  },
+  userId?: string | null
 ) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  const query = new URLSearchParams({
+    id: `eq.${id}`,
+  });
+  applyUserScope(query, userId);
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/tasks?id=eq.${encodeURIComponent(id)}`, {
+  const response = await fetch(`${supabaseUrl}/rest/v1/tasks?${query.toString()}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",

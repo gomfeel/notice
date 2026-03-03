@@ -1,5 +1,6 @@
 import { updateIntakeStatus } from "../../../../lib/intake/store";
 import { authorizeApiRequest } from "../../../../lib/security/api-token";
+import { resolveRequestUserId } from "../../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   updateLinkStatusInSupabase,
@@ -10,13 +11,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
+  }
 
   try {
     const body = await request.json();
     const status = body?.status === "read" ? "read" : "unread";
 
     if (hasSupabaseEnv()) {
-      const updated = await updateLinkStatusInSupabase(params.id, status);
+      const updated = await updateLinkStatusInSupabase(params.id, status, user.userId);
       return Response.json({ item: updated[0] ?? updated });
     }
 

@@ -4,6 +4,7 @@ import { listFolderItems } from "../../../lib/folders/store";
 import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
+import { resolveRequestUserId } from "../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   insertLinkToSupabase,
@@ -14,9 +15,14 @@ function getDefaultFolders() {
   return listFolderItems().map((item) => ({ id: item.id, name: item.name, description: item.description }));
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
+  }
+
   if (hasSupabaseEnv()) {
-    const recent = await listRecentLinksFromSupabase(20);
+    const recent = await listRecentLinksFromSupabase(20, user.userId);
     return Response.json({ source: "supabase", items: recent.items });
   }
 
@@ -27,6 +33,10 @@ export async function POST(request: Request) {
   const auth = authorizeApiRequest(request);
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
+  }
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
   }
 
   try {
@@ -59,7 +69,7 @@ export async function POST(request: Request) {
       title: finalTitle,
       summary: finalDescription,
       status: "unread",
-    });
+    }, user.userId);
 
     const item = {
       id: randomUUID(),

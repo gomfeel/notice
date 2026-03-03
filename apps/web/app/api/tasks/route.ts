@@ -1,5 +1,6 @@
 import { addTaskItem, listTaskItems } from "../../../lib/tasks/store";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
+import { resolveRequestUserId } from "../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   insertTaskToSupabase,
@@ -12,10 +13,15 @@ function normalizeDateTime(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
+  }
+
   if (hasSupabaseEnv()) {
     try {
-      const result = await listTasksFromSupabase(50);
+      const result = await listTasksFromSupabase(50, user.userId);
       return Response.json({ source: "supabase", items: result.items });
     } catch {
       return Response.json({ source: "memory-fallback", items: listTaskItems() });
@@ -29,6 +35,10 @@ export async function POST(request: Request) {
   const auth = authorizeApiRequest(request);
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
+  }
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
   }
 
   try {
@@ -45,7 +55,7 @@ export async function POST(request: Request) {
         show_on_lock_screen: showOnLockScreen,
         starts_at: startsAt,
         ends_at: endsAt,
-      });
+      }, user.userId);
       return Response.json({ item: inserted[0] ?? inserted }, { status: 201 });
     }
 

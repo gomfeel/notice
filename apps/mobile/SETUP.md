@@ -22,6 +22,14 @@ flutter run --dart-define=NOTICE_API_BASE_URL=http://127.0.0.1:3000
 flutter run --dart-define=NOTICE_API_BASE_URL=http://127.0.0.1:3000 --dart-define=NOTICE_API_TOKEN=your_token
 ```
 
+## Optional (user scope enabled server)
+
+서버에서 `NOTICE_REQUIRE_USER_ID=1`을 사용한다면 모바일에서도 사용자 ID를 전달해야 합니다.
+
+```bash
+flutter run --dart-define=NOTICE_API_BASE_URL=http://127.0.0.1:3000 --dart-define=NOTICE_USER_ID=user_001
+```
+
 ## Device networking note
 
 - iOS 시뮬레이터: `http://127.0.0.1:3000` 사용 가능
