@@ -1,59 +1,54 @@
-📑 Project Master Plan: Notice (노티스)
-1. 개요 (Overview)
-서비스명: Notice (노티스)
+# Project Master Plan: Notice
 
-한 줄 정의: "잊지 않기 위해 기록하고, AI가 알아서 분류하는 텍스트 중심 인사이트 저장소"
+## 1. 개요 (Overview)
+- 서비스명: Notice (노티스)
+- 한 줄 정의: 읽고 끝나는 링크를 모아 AI로 분류하고, 할 일까지 연결해 관리하는 개인 생산성 도구
+- 해결하려는 문제:
+  - 모바일에서 본 링크를 나중에 찾기 어렵다.
+  - 저장은 했지만 분류가 안 되어 다시 보지 않는다.
+  - 잠금화면/대시보드에서 바로 확인 가능한 실행 단위(할 일)로 연결이 필요하다.
 
-핵심 타겟: 모바일에서 정보를 수집하고 PC에서 정리하는 유저, 할 일을 자주 잊어 잠금화면에 상기시키고 싶은 유저.
+## 2. 디자인 원칙 (Design Principles)
+- Minimalist & Utility: 장식보다 정보 접근성과 처리 속도 우선
+- Text-Centric: 제목/요약/분류/상태 중심 UI
+- Efficiency: 최소 클릭으로 수집 → 분류 → 확인/완료까지 연결
 
-2. 디자인 원칙 (Design Principles)
-Minimalist & Utility: 화려한 이미지보다는 텍스트의 가독성과 정보의 구조에 집중 (애플 순정 메모 앱 스타일).
+## 3. 기술 스택 (Tech Stack)
+- Mobile: Flutter (iOS Share Extension 연동)
+- Web: Next.js (대시보드/관리)
+- Backend/DB: Supabase (Postgres, RLS, Edge Functions)
+- AI: OpenAI `gpt-4o-mini` (폴더 추천/기본 분류)
 
-Text-Centric: 썸네일 노출을 최소화하고 제목, 본문 요약, 카테고리 태그 중심으로 구성.
+## 4. 로드맵 (Priority Roadmap)
 
-Efficiency: 최소한의 클릭으로 저장하고 분류할 수 있는 동선 확보.
+### Phase 1 (현재 진행)
+- iOS Share Extension으로 URL 전달
+- 메타데이터 추출
+- AI 기반 폴더 추천
+- Supabase 저장 및 웹 대시보드 반영
+- 할 일 생성/완료/잠금화면 표시 상태 관리
 
-3. 기술 스택 (Tech Stack)
-Frontend (Mobile): Flutter (iOS Share Extension 및 WidgetKit 연동 최적화)
+### Phase 2
+- 잠금화면 위젯(할 일 표시)
+- 잠금화면에서 즉시 완료 처리(인터랙션)
 
-Frontend (Web): Next.js (PC 대시보드 및 관리용)
+### Phase 3
+- Google Calendar 양방향 동기화
 
-Backend/DB: Supabase (Auth, Realtime DB, Edge Functions)
+## 5. 데이터 스키마 (Data Schema)
+- users: `id`, `email`, `google_access_token`, `created_at`
+- folders: `id`, `user_id`, `name`, `icon`, `created_at`
+- links: `id`, `user_id`, `folder_id`, `original_url`, `title`, `summary`, `status`, `created_at`
+- tasks: `id`, `user_id`, `content`, `is_completed`, `show_on_lock_screen`, `starts_at`, `ends_at`, `created_at`
 
-AI: OpenAI API (gpt-4o-mini 등) - 콘텐츠 분석 및 폴더 추천용.
+## 6. 비기능 요구사항 (Non-functional)
+- 다중 사용자 데이터 분리(RLS)
+- 한국어 UI 우선
+- 장애 시 메모리 폴백 경로 제공(개발 단계)
+- API 보호 토큰(`NOTICE_API_TOKEN`) 지원
 
-4. 핵심 기능 로드맵 (Priority Roadmap)
-[Phase 1: iOS Share Extension & AI 분류] - 최우선 순위
-Share Extension: 인스타그램, 유튜브, 브라우저 등에서 '공유하기' 클릭 시 'Notice' 앱이 노출되어 즉시 저장.
-
-AI Auto-Categorization: * 링크가 유입되면 AI가 제목과 내용을 분석.
-
-기존 폴더(주식, 여행, 업무 등) 중 가장 적합한 곳을 추천하거나 자동 분류.
-
-Real-time Sync: 모바일에서 저장 즉시 Supabase를 통해 PC 웹 대시보드에 반영.
-
-[Phase 2: 잠금화면 위젯 & 체크리스트]
-Lock Screen Widget: 아이폰 잠금화면에 '포스트잇' 형태로 메모 또는 체크리스트 노출.
-
-Interactive Task: 잠금화면에서 바로 완료 체크가 가능한 라이브 액티비티 활용.
-
-[Phase 3: 구글 캘린더 연동]
-Two-way Sync: 구글 캘린더 API 연동. 앱 내 일정 수정 시 캘린더 반영, 반대도 가능.
-
-5. 데이터 구조 (Data Schema)
-users: ID, 이메일, 구글 연동 토큰.
-
-folders: ID, 유저ID, 폴더명(주식, 여행, 업무 등), 아이콘.
-
-links: ID, 폴더ID, 원본 URL, AI 요약 텍스트, 상태(확인 전/후).
-
-tasks: ID, 유저ID, 내용, 완료 여부, 잠금화면 노출 여부, 시작/종료 시간.
-
-6. AI에게 주는 첫 번째 지시문 (First Prompt)
-"너는 지금부터 'Notice'라는 프로젝트를 개발하는 시니어 개발자야. 위 마스터 플랜을 바탕으로 프로젝트를 시작할 거야.
-
-먼저 Flutter 프로젝트 구조를 잡고, Supabase 연동 설계를 진행해줘.
-
-가장 먼저 구현할 것은 iOS Share Extension이야. 아이폰에서 링크를 공유했을 때 우리 앱으로 URL이 전달되는 구조를 먼저 만들어줘.
-
-그 다음, 유입된 URL의 메타데이터를 긁어오고 AI(OpenAI)를 사용해 폴더를 추천해주는 로직을 작성할 거야.
+## 7. 현재 우선 과제 (2026-03-03 기준)
+1. iOS Share Extension Xcode 실연결 완료
+2. Supabase 마이그레이션 실제 적용 및 A/B 사용자 분리 검증
+3. 인증 체계를 `auth.uid()` 중심으로 전환
+4. 운영 로그/모니터링 도입

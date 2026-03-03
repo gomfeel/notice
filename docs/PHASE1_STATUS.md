@@ -1,36 +1,48 @@
-# Phase 1 Status
+# Phase 1 Status (2026-03-03)
 
-## Implemented
-- URL 수집 API: `POST /api/intake`
-- 수집 이력 API: `GET /api/intake`
-- 링크 상태 변경 API: `PATCH /api/intake/:id`
-- 폴더 API: `GET /api/folders`, `POST /api/folders`
-- 할 일 API: `GET /api/tasks`, `POST /api/tasks`, `PATCH /api/tasks/:id`
-- 대시보드 URL 수집 폼 + 최근 항목 목록
-- 대시보드 링크 상태 토글(확인 전/확인 완료)
-- 대시보드 링크 필터/정렬/검색(쿼리 동기화)
-- 대시보드 폴더 목록 + 폴더 추가
-- 대시보드 할 일 목록 + 완료 체크 + 할 일 추가
-- 대시보드 할 일 필터/검색
-- 할 일 시작/종료 시간 입력/저장/표시
-- 메타데이터 추출 헬퍼
-- 분류 경로:
-  - Supabase Edge Function(OpenAI `gpt-4o-mini`)
-  - OpenAI 키 미설정/실패 시 키워드 대체
-- Supabase 저장 경로:
-  - 환경 변수 설정 시 실제 저장
-  - 미설정 시 메모리 대체
-- API 최소 보호 레이어:
-  - `NOTICE_API_TOKEN` 설정 시 외부 요청 토큰 검사
-  - 동일 오리진 브라우저 요청은 허용
-- 모바일 Share Extension 착수:
-  - iOS ShareViewController 템플릿 추가
-  - Flutter MethodChannel 수신 코드 추가
-  - Runner AppDelegate MethodChannel 템플릿 추가
+## 완료된 항목
+- URL 수집 API
+  - `POST /api/intake`
+  - `GET /api/intake`
+  - `PATCH /api/intake/:id` (확인 상태 변경)
+- 폴더 API
+  - `GET /api/folders`
+  - `POST /api/folders`
+  - Supabase 저장 경로 + memory fallback 연동
+- 할 일 API
+  - `GET /api/tasks`
+  - `POST /api/tasks`
+  - `PATCH /api/tasks/:id` (완료/잠금화면 표시 토글)
+- 대시보드 기능
+  - URL 수집 입력 + 최근 수집 목록
+  - 링크 상태 토글(확인 전/완료)
+  - 폴더 추가/목록
+  - 할 일 추가/완료/잠금화면 표시
+  - 필터/검색/정렬 + URL 쿼리 동기화
+  - 자동 재조회(15초 주기)
+  - 사용자 ID 설정 패널(localStorage `notice_user_id`)
+- 모바일(기반)
+  - Share Extension 템플릿(ios/ShareExtension)
+  - MethodChannel 수신 코드
+  - 모바일 intake API 호출 설정(`NOTICE_API_BASE_URL`, `NOTICE_API_TOKEN`, `NOTICE_USER_ID`)
+- 보안/분리
+  - `NOTICE_API_TOKEN` 기반 API 보호
+  - `x-notice-user-id` 기반 사용자 스코프
+  - 서버 UUID 검증
+  - Supabase RLS 마이그레이션 `0003_user_scope.sql` 추가
 
-## Remaining for production
-- iOS Share Extension Xcode 타깃 실제 연결 및 App Group 설정
-- iOS Runner AppDelegate 템플릿 실제 반영/빌드 검증
-- 실제 사용자 인증 세션 기반 RLS 검증
-- 재시도 큐 및 관측성(로그/알림)
-- 프롬프트 버전 관리 체계
+## 문서/운영 보조
+- RLS 체크리스트: `docs/SUPABASE_RLS_CHECKLIST.md`
+- Supabase 적용 런북: `docs/SUPABASE_APPLY_RUNBOOK.md`
+- 사용자 분리 자동 검증: `scripts/verify_user_scope.ps1`, `docs/USER_SCOPE_TEST.md`
+
+## 운영 전 남은 항목
+1. iOS Share Extension Xcode 실연결
+   - Runner/App Group/URL Scheme/Entitlements 실제 반영
+2. Supabase 실환경 적용 검증
+   - `supabase db push`
+   - A/B 사용자 분리 시나리오 실행 결과 확인
+3. 인증 고도화
+   - `x-notice-user-id` 보조 구조에서 `auth.uid()` 중심으로 전환
+4. 관측성/운영
+   - 에러 로깅, 요청 추적, 기본 모니터링
