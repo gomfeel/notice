@@ -1,5 +1,6 @@
 import IntakeForm from "./intake-form";
 import TaskPanel from "./task-panel";
+import UserScopePanel from "./user-scope-panel";
 
 const phase1Checklist = [
   "\uACF5\uC720 \uB9C1\uD06C URL \uC218\uC9D1 \uACBD\uB85C",
@@ -18,6 +19,7 @@ export default function DashboardPage() {
           <li key={item}>{item}</li>
         ))}
       </ul>
+      <UserScopePanel />
       <IntakeForm />
       <TaskPanel />
     </main>
