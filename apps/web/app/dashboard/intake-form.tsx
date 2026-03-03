@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 type IntakeStatus = "unread" | "read";
+type IntakeSort = "created_desc" | "created_asc" | "confidence_desc";
 
 type RecentItem = {
   id: string;
@@ -32,6 +33,18 @@ function statusLabel(status: IntakeStatus) {
   return status === "read" ? "\uD655\uC778 \uC644\uB8CC" : "\uD655\uC778 \uC804";
 }
 
+function sortLabel(sort: IntakeSort) {
+  if (sort === "created_asc") return "\uC624\uB798\uB41C\uC21C";
+  if (sort === "confidence_desc") return "\uC2E0\uB8B0\uB3C4\uC21C";
+  return "\uCD5C\uC2E0\uC21C";
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("ko-KR");
+}
+
 export default function IntakeForm() {
   const router = useRouter();
   const pathname = usePathname();
@@ -47,6 +60,7 @@ export default function IntakeForm() {
 
   const [filterFolder, setFilterFolder] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | IntakeStatus>("all");
+  const [sortBy, setSortBy] = useState<IntakeSort>("created_desc");
   const [search, setSearch] = useState("");
 
   async function loadItems() {
@@ -72,11 +86,15 @@ export default function IntakeForm() {
     const params = new URLSearchParams(window.location.search);
     const folder = params.get("folder");
     const status = params.get("status");
+    const sort = params.get("sort");
     const q = params.get("q");
 
     if (folder) setFilterFolder(folder);
     if (status === "read" || status === "unread" || status === "all") {
       setFilterStatus(status as "all" | IntakeStatus);
+    }
+    if (sort === "created_desc" || sort === "created_asc" || sort === "confidence_desc") {
+      setSortBy(sort as IntakeSort);
     }
     if (q) setSearch(q);
   }, []);
@@ -85,21 +103,32 @@ export default function IntakeForm() {
     const params = new URLSearchParams();
     if (filterFolder !== "all") params.set("folder", filterFolder);
     if (filterStatus !== "all") params.set("status", filterStatus);
+    if (sortBy !== "created_desc") params.set("sort", sortBy);
     if (search.trim()) params.set("q", search.trim());
 
     const qs = params.toString();
     router.replace(qs ? `${safePathname}?${qs}` : safePathname, { scroll: false });
-  }, [filterFolder, filterStatus, search, router, safePathname]);
+  }, [filterFolder, filterStatus, sortBy, search, router, safePathname]);
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const filtered = items.filter((item) => {
       const byFolder = filterFolder === "all" || item.selectedFolder === filterFolder;
       const byStatus = filterStatus === "all" || item.status === filterStatus;
       const q = search.trim().toLowerCase();
       const bySearch = !q || item.title.toLowerCase().includes(q) || item.url.toLowerCase().includes(q);
       return byFolder && byStatus && bySearch;
     });
-  }, [items, filterFolder, filterStatus, search]);
+
+    return filtered.sort((a, b) => {
+      if (sortBy === "created_asc") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortBy === "confidence_desc") {
+        return b.confidence - a.confidence;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [items, filterFolder, filterStatus, sortBy, search]);
 
   async function addFolder() {
     if (!newFolderName.trim()) {
@@ -234,6 +263,11 @@ export default function IntakeForm() {
             <option value="unread">\uD655\uC778 \uC804</option>
             <option value="read">\uD655\uC778 \uC644\uB8CC</option>
           </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as IntakeSort)}>
+            <option value="created_desc">\uCD5C\uC2E0\uC21C</option>
+            <option value="created_asc">\uC624\uB798\uB41C\uC21C</option>
+            <option value="confidence_desc">\uC2E0\uB8B0\uB3C4\uC21C</option>
+          </select>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -241,6 +275,10 @@ export default function IntakeForm() {
             style={{ minWidth: 220 }}
           />
         </div>
+
+        <p style={{ marginTop: 0, opacity: 0.8 }}>
+          \uD45C\uC2DC \uD56D\uBAA9: {filteredItems.length} / {items.length} · \uC815\uB82C: {sortLabel(sortBy)}
+        </p>
 
         {filteredItems.length === 0 ? <p>\uC870\uAC74\uC5D0 \uB9DE\uB294 \uD56D\uBAA9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</p> : null}
         <ul style={{ paddingLeft: 18 }}>
@@ -250,6 +288,7 @@ export default function IntakeForm() {
               <div>\uD3F4\uB354: {item.selectedFolder}</div>
               <div>\uC2E0\uB8B0\uB3C4: {item.confidence}</div>
               <div>\uC0C1\uD0DC: {statusLabel(item.status)}</div>
+              <div>\uC0DD\uC131\uC2DC\uAC01: {formatDate(item.createdAt)}</div>
               <div style={{ marginTop: 6 }}>
                 <button onClick={() => toggleStatus(item)} style={{ padding: "6px 10px" }}>
                   {item.status === "read" ? "\uD655\uC778 \uC804\uC73C\uB85C" : "\uD655\uC778 \uC644\uB8CC\uB85C"}
