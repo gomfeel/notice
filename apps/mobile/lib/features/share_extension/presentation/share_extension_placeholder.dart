@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 
 import "../application/handle_shared_url.dart";
+import "../infrastructure/app_config.dart";
 import "../infrastructure/share_intake_api.dart";
 import "../infrastructure/shared_url_channel.dart";
 
@@ -22,7 +23,10 @@ class _ShareExtensionPlaceholderState extends State<ShareExtensionPlaceholder> {
   void initState() {
     super.initState();
     _handleSharedUrl = HandleSharedUrl(
-      ShareIntakeApi(baseUrl: "http://localhost:3000"),
+      ShareIntakeApi(
+        baseUrl: AppConfig.apiBaseUrl,
+        apiToken: AppConfig.apiToken,
+      ),
     );
     _sharedUrlChannel = SharedUrlChannel();
     _loadSharedUrlFromExtension();
@@ -99,6 +103,8 @@ class _ShareExtensionPlaceholderState extends State<ShareExtensionPlaceholder> {
             ],
           ),
           const SizedBox(height: 12),
+          Text("API 서버: ${AppConfig.apiBaseUrl}"),
+          const SizedBox(height: 8),
           Text(_result),
         ],
       ),
