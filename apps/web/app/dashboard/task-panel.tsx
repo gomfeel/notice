@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,10 +18,10 @@ type TaskLockFilter = "all" | "lock_on" | "lock_off";
 type TaskSort = "created_desc" | "starts_asc" | "ends_asc";
 
 function sourceLabel(source: string) {
-  if (source === "supabase") return "\uC11C\uBC84 DB";
-  if (source === "memory") return "\uBA54\uBAA8\uB9AC";
-  if (source === "memory-fallback") return "\uBA54\uBAA8\uB9AC(\uB300\uCCB4)";
-  return "\uC54C \uC218 \uC5C6\uC74C";
+  if (source === "supabase") return "서버 DB";
+  if (source === "memory") return "메모리";
+  if (source === "memory-fallback") return "메모리(대체)";
+  return "알 수 없음";
 }
 
 function formatDate(value?: string | null) {
@@ -64,7 +64,7 @@ export default function TaskPanel() {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error ?? "\uD560 \uC77C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      throw new Error(data.error ?? "할 일 목록을 불러오지 못했습니다.");
     }
     setTasks(data.items ?? []);
     setSource(data.source ?? "unknown");
@@ -72,14 +72,14 @@ export default function TaskPanel() {
 
   useEffect(() => {
     loadTasks().catch(() => {
-      setError("\uD560 \uC77C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      setError("할 일 목록을 불러오지 못했습니다.");
     });
   }, []);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       loadTasks().catch((e) => {
-        setError(e instanceof Error ? e.message : "\uD560 \uC77C \uBAA9\uB85D \uC790\uB3D9 \uC0C8\uB85C\uACE0\uCE68\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.");
+        setError(e instanceof Error ? e.message : "할 일 목록 자동 새로고침에 실패했습니다.");
       });
     }, 15000);
 
@@ -172,11 +172,11 @@ export default function TaskPanel() {
 
   async function createTask() {
     if (!content.trim()) {
-      setError("\uD560 \uC77C \uB0B4\uC6A9\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694.");
+      setError("할 일 내용을 입력해 주세요.");
       return;
     }
     if (startsAt && endsAt && new Date(endsAt).getTime() < new Date(startsAt).getTime()) {
-      setError("\uC885\uB8CC \uC2DC\uAC04\uC740 \uC2DC\uC791 \uC2DC\uAC04 \uC774\uD6C4\uC5EC\uC57C \uD569\uB2C8\uB2E4.");
+      setError("종료 시간은 시작 시간 이후여야 합니다.");
       return;
     }
 
@@ -194,7 +194,7 @@ export default function TaskPanel() {
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "\uD560 \uC77C\uC744 \uCD94\uAC00\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      setError(data.error ?? "할 일을 추가하지 못했습니다.");
       return;
     }
 
@@ -214,7 +214,7 @@ export default function TaskPanel() {
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "\uD560 \uC77C \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      setError(data.error ?? "할 일 상태를 변경하지 못했습니다.");
       return;
     }
 
@@ -230,7 +230,7 @@ export default function TaskPanel() {
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "\uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      setError(data.error ?? "잠금화면 표시 상태를 변경하지 못했습니다.");
       return;
     }
 
@@ -239,23 +239,23 @@ export default function TaskPanel() {
 
   return (
     <section style={{ marginTop: 28 }}>
-      <h2>\uD560 \uC77C \uAD00\uB9AC</h2>
-      <p>\uB370\uC774\uD130 \uC18C\uC2A4: {sourceLabel(source)}</p>
+      <h2>할 일 관리</h2>
+      <p>데이터 소스: {sourceLabel(source)}</p>
 
       <div style={{ display: "grid", gap: 8, maxWidth: 900 }}>
         <input
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          placeholder="\uD560 \uC77C \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694"
+          placeholder="할 일 내용을 입력하세요"
           style={{ padding: 10 }}
         />
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <span>\uC2DC\uC791</span>
+            <span>시작</span>
             <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
           </label>
           <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <span>\uC885\uB8CC</span>
+            <span>종료</span>
             <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
           </label>
           <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
@@ -264,34 +264,34 @@ export default function TaskPanel() {
               checked={showOnLockScreen}
               onChange={(event) => setShowOnLockScreen(event.target.checked)}
             />
-            \uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC
+            잠금화면 표시
           </label>
           <button onClick={createTask} style={{ padding: "10px 14px" }}>
-            \uCD94\uAC00
+            추가
           </button>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
         <select value={filter} onChange={(e) => setFilter(e.target.value as TaskFilter)}>
-          <option value="all">\uC804\uCCB4</option>
-          <option value="incomplete">\uBBF8\uC644\uB8CC</option>
-          <option value="completed">\uC644\uB8CC</option>
+          <option value="all">전체</option>
+          <option value="incomplete">미완료</option>
+          <option value="completed">완료</option>
         </select>
         <select value={lockFilter} onChange={(e) => setLockFilter(e.target.value as TaskLockFilter)}>
-          <option value="all">\uC7A0\uAE08\uD654\uBA74 \uC804\uCCB4</option>
-          <option value="lock_on">\uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC</option>
-          <option value="lock_off">\uC7A0\uAE08\uD654\uBA74 \uBBF8\uD45C\uC2DC</option>
+          <option value="all">잠금화면 전체</option>
+          <option value="lock_on">잠금화면 표시</option>
+          <option value="lock_off">잠금화면 미표시</option>
         </select>
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value as TaskSort)}>
-          <option value="created_desc">\uCD5C\uC2E0 \uD65C\uB3D9\uC21C</option>
-          <option value="starts_asc">\uC2DC\uC791 \uC2DC\uAC04 \uC21C</option>
-          <option value="ends_asc">\uC885\uB8CC \uC2DC\uAC04 \uC21C</option>
+          <option value="created_desc">최신 활동순</option>
+          <option value="starts_asc">시작 시간 순</option>
+          <option value="ends_asc">종료 시간 순</option>
         </select>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="\uD560 \uC77C \uAC80\uC0C9"
+          placeholder="할 일 검색"
           style={{ minWidth: 220 }}
         />
       </div>
@@ -312,20 +312,21 @@ export default function TaskPanel() {
               </span>
             </label>
             <div style={{ marginLeft: 24, fontSize: 13, opacity: 0.85 }}>
-              <div>\uC2DC\uC791: {formatDate(task.startsAt)}</div>
-              <div>\uC885\uB8CC: {formatDate(task.endsAt)}</div>
+              <div>시작: {formatDate(task.startsAt)}</div>
+              <div>종료: {formatDate(task.endsAt)}</div>
               <div>
-                \uC7A0\uAE08\uD654\uBA74: {task.showOnLockScreen ? "\uD45C\uC2DC" : "\uBBF8\uD45C\uC2DC"}
+                잠금화면: {task.showOnLockScreen ? "표시" : "미표시"}
                 {" "}
                 <button onClick={() => toggleLockScreen(task)} style={{ padding: "4px 8px", marginLeft: 6 }}>
-                  {task.showOnLockScreen ? "\uBBF8\uD45C\uC2DC\uB85C \uBCC0\uACBD" : "\uD45C\uC2DC\uB85C \uBCC0\uACBD"}
+                  {task.showOnLockScreen ? "미표시로 변경" : "표시로 변경"}
                 </button>
               </div>
             </div>
           </li>
         ))}
       </ul>
-      {filteredTasks.length === 0 ? <p>\uC870\uAC74\uC5D0 \uB9DE\uB294 \uD560 \uC77C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</p> : null}
+      {filteredTasks.length === 0 ? <p>조건에 맞는 할 일이 없습니다.</p> : null}
     </section>
   );
 }
+
