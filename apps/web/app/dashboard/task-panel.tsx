@@ -10,10 +10,12 @@ type TaskItem = {
   showOnLockScreen?: boolean;
   startsAt?: string | null;
   endsAt?: string | null;
+  createdAt?: string | null;
 };
 
 type TaskFilter = "all" | "completed" | "incomplete";
 type TaskLockFilter = "all" | "lock_on" | "lock_off";
+type TaskSort = "created_desc" | "starts_asc" | "ends_asc";
 
 function sourceLabel(source: string) {
   if (source === "supabase") return "\uC11C\uBC84 DB";
@@ -44,6 +46,7 @@ export default function TaskPanel() {
 
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [lockFilter, setLockFilter] = useState<TaskLockFilter>("all");
+  const [sortBy, setSortBy] = useState<TaskSort>("created_desc");
   const [query, setQuery] = useState("");
 
   async function loadTasks() {
@@ -71,6 +74,7 @@ export default function TaskPanel() {
     const params = new URLSearchParams(window.location.search);
     const taskFilter = params.get("task_filter");
     const taskLock = params.get("task_lock");
+    const taskSort = params.get("task_sort");
     const taskQ = params.get("task_q");
 
     if (taskFilter === "all" || taskFilter === "completed" || taskFilter === "incomplete") {
@@ -78,6 +82,9 @@ export default function TaskPanel() {
     }
     if (taskLock === "all" || taskLock === "lock_on" || taskLock === "lock_off") {
       setLockFilter(taskLock as TaskLockFilter);
+    }
+    if (taskSort === "created_desc" || taskSort === "starts_asc" || taskSort === "ends_asc") {
+      setSortBy(taskSort as TaskSort);
     }
     if (taskQ) {
       setQuery(taskQ);
@@ -96,6 +103,11 @@ export default function TaskPanel() {
     } else {
       params.delete("task_lock");
     }
+    if (sortBy !== "created_desc") {
+      params.set("task_sort", sortBy);
+    } else {
+      params.delete("task_sort");
+    }
 
     if (query.trim()) {
       params.set("task_q", query.trim());
@@ -105,10 +117,10 @@ export default function TaskPanel() {
 
     const qs = params.toString();
     router.replace(qs ? `${safePathname}?${qs}` : safePathname, { scroll: false });
-  }, [filter, lockFilter, query, router, safePathname]);
+  }, [filter, lockFilter, sortBy, query, router, safePathname]);
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    const filtered = tasks.filter((task) => {
       const byStatus =
         filter === "all" ||
         (filter === "completed" && task.isCompleted) ||
@@ -124,7 +136,23 @@ export default function TaskPanel() {
 
       return byStatus && byLock && byQuery;
     });
-  }, [tasks, filter, lockFilter, query]);
+
+    return filtered.sort((a, b) => {
+      if (sortBy === "starts_asc") {
+        return toTime(a.startsAt) - toTime(b.startsAt);
+      }
+      if (sortBy === "ends_asc") {
+        return toTime(a.endsAt) - toTime(b.endsAt);
+      }
+      return toTime(b.createdAt) - toTime(a.createdAt);
+    });
+  }, [tasks, filter, lockFilter, sortBy, query]);
+
+  function toTime(value?: string | null) {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
+  }
 
   async function createTask() {
     if (!content.trim()) {
@@ -234,6 +262,11 @@ export default function TaskPanel() {
           <option value="all">\uC7A0\uAE08\uD654\uBA74 \uC804\uCCB4</option>
           <option value="lock_on">\uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC</option>
           <option value="lock_off">\uC7A0\uAE08\uD654\uBA74 \uBBF8\uD45C\uC2DC</option>
+        </select>
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as TaskSort)}>
+          <option value="created_desc">\uCD5C\uC2E0 \uD65C\uB3D9\uC21C</option>
+          <option value="starts_asc">\uC2DC\uC791 \uC2DC\uAC04 \uC21C</option>
+          <option value="ends_asc">\uC885\uB8CC \uC2DC\uAC04 \uC21C</option>
         </select>
         <input
           value={query}
