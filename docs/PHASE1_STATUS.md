@@ -24,6 +24,7 @@
 - 모바일(기반)
   - Share Extension 템플릿(ios/ShareExtension)
   - iOS 템플릿 적용 스크립트(`scripts/setup_ios_share_extension.ps1`)
+  - iOS 설정 검증 스크립트(`scripts/verify_ios_share_extension_setup.ps1`)
   - `AppDelegate.swift`, `ShareExtension/Info.plist` 생성 반영
   - MethodChannel 수신 코드
   - 모바일 intake API 호출 설정(`NOTICE_API_BASE_URL`, `NOTICE_API_TOKEN`, `NOTICE_USER_ID`)

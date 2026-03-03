@@ -11,6 +11,7 @@
 - `apps/mobile/ios/Runner/AppDelegate.template.swift`
 - `apps/mobile/lib/features/share_extension/infrastructure/shared_url_channel.dart`
 - `scripts/setup_ios_share_extension.ps1` (템플릿 적용 보조)
+- `scripts/verify_ios_share_extension_setup.ps1` (설정 검증)
 
 ## 적용 순서
 1. Flutter iOS 프로젝트 생성
@@ -33,6 +34,11 @@ powershell -ExecutionPolicy Bypass -File scripts/setup_ios_share_extension.ps1
 이 스크립트는 템플릿 파일을 아래 위치로 복사합니다.
 - `apps/mobile/ios/Runner/AppDelegate.swift`
 - `apps/mobile/ios/ShareExtension/Info.plist`
+
+설정 검증:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify_ios_share_extension_setup.ps1
+```
 
 ## MethodChannel 메서드
 - `getSharedUrl`: App Group UserDefaults의 `shared_url` 반환
