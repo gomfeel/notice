@@ -1,4 +1,5 @@
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
+const UUID_V4_OR_V1 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isEnabled(value: string | undefined) {
   if (!value) return false;
@@ -12,6 +13,14 @@ export function resolveRequestUserId(request: Request) {
     "";
   const defaultUserId = process.env.NOTICE_DEFAULT_USER_ID?.trim() || "";
   const userId = fromHeader || defaultUserId || null;
+
+  if (userId && !UUID_V4_OR_V1.test(userId)) {
+    return {
+      ok: false as const,
+      userId: null,
+      message: "사용자 ID 형식이 올바르지 않습니다. UUID를 사용해 주세요.",
+    };
+  }
 
   if (isEnabled(process.env.NOTICE_REQUIRE_USER_ID) && !userId) {
     return {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "notice_user_id";
+const UUID_V4_OR_V1 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export default function UserScopePanel() {
   const [userId, setUserId] = useState("");
@@ -20,6 +21,10 @@ export default function UserScopePanel() {
     const next = userId.trim();
     if (!next) {
       setMessage("사용자 ID를 입력해 주세요.");
+      return;
+    }
+    if (!UUID_V4_OR_V1.test(next)) {
+      setMessage("UUID 형식이 아닙니다. 예: 9d6dfca0-b4f2-4a3f-93da-78e4d40138d2");
       return;
     }
 
