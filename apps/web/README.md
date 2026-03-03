@@ -29,6 +29,7 @@ npm run dev
 - API는 `x-notice-user-id` 헤더를 읽어 Supabase `user_id` 기준으로 조회/수정합니다.
 - `NOTICE_REQUIRE_USER_ID=1`이면 사용자 ID가 없는 요청은 거절됩니다.
 - 웹 내부 호출만 쓰는 경우 `NOTICE_DEFAULT_USER_ID`를 설정해 기본 사용자로 동작시킬 수 있습니다.
+- 사용자 ID는 UUID 문자열을 사용해야 합니다. (예: `9d6dfca0-b4f2-4a3f-93da-78e4d40138d2`)
 
 ## 참고
 - Supabase 환경 변수가 없으면 메모리 폴백 경로로 동작합니다.
