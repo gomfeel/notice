@@ -34,3 +34,4 @@ npm run dev
 ## 참고
 - Supabase 환경 변수가 없으면 메모리 폴백 경로로 동작합니다.
 - Supabase 환경 변수가 있으면 `x-notice-user-id`(또는 `NOTICE_DEFAULT_USER_ID`)가 반드시 필요합니다.
+- 진단용 상태 확인: `GET /api/health`

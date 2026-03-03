@@ -11,11 +11,24 @@ type ProbeResult = {
   error?: string;
 };
 
+type HealthResult = {
+  status: string;
+  now: string;
+  config: {
+    supabaseEnabled: boolean;
+    apiTokenEnabled: boolean;
+    requireUserId: boolean;
+    defaultUserIdConfigured: boolean;
+  };
+};
+
 export default function UserScopePanel() {
   const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("저장된 사용자 ID가 없습니다.");
   const [probeMessage, setProbeMessage] = useState("");
+  const [healthMessage, setHealthMessage] = useState("");
   const [probing, setProbing] = useState(false);
+  const [checkingHealth, setCheckingHealth] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)?.trim() ?? "";
@@ -85,11 +98,38 @@ export default function UserScopePanel() {
     }
   }
 
+  async function checkHealth() {
+    setCheckingHealth(true);
+    setHealthMessage("서버 설정 확인 중...");
+    try {
+      const response = await fetch("/api/health", { method: "GET", cache: "no-store" });
+      const data = (await response.json()) as HealthResult;
+      if (!response.ok) {
+        setHealthMessage("서버 상태 확인 실패");
+        return;
+      }
+
+      setHealthMessage(
+        [
+          `status=${data.status}`,
+          `supabase=${data.config.supabaseEnabled ? "on" : "off"}`,
+          `apiToken=${data.config.apiTokenEnabled ? "on" : "off"}`,
+          `requireUserId=${data.config.requireUserId ? "on" : "off"}`,
+          `defaultUserId=${data.config.defaultUserIdConfigured ? "set" : "empty"}`,
+        ].join(" | ")
+      );
+    } catch (error) {
+      setHealthMessage(error instanceof Error ? `실패: ${error.message}` : "실패: 알 수 없는 오류");
+    } finally {
+      setCheckingHealth(false);
+    }
+  }
+
   return (
     <section style={{ marginTop: 12, padding: 12, border: "1px solid #ddd", borderRadius: 8, maxWidth: 900 }}>
       <h2 style={{ marginTop: 0 }}>사용자 분리 설정</h2>
       <p style={{ marginTop: 0 }}>
-        Supabase 모드에서는 사용자 ID(UUID)가 필요합니다. 저장 후 대시보드 요청에 자동으로 적용됩니다.
+        Supabase 모드에서는 사용자 ID(UUID)가 필요합니다. 저장 후 대시보드 요청에 자동 적용됩니다.
       </p>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -111,10 +151,14 @@ export default function UserScopePanel() {
         <button onClick={probeApi} disabled={probing} style={{ padding: "8px 12px" }}>
           {probing ? "테스트 중..." : "API 테스트"}
         </button>
+        <button onClick={checkHealth} disabled={checkingHealth} style={{ padding: "8px 12px" }}>
+          {checkingHealth ? "확인 중..." : "서버 상태"}
+        </button>
       </div>
 
       <p style={{ marginBottom: 0, opacity: 0.9 }}>{message}</p>
       {probeMessage ? <p style={{ marginTop: 6, marginBottom: 0, opacity: 0.9 }}>{probeMessage}</p> : null}
+      {healthMessage ? <p style={{ marginTop: 6, marginBottom: 0, opacity: 0.9 }}>{healthMessage}</p> : null}
     </section>
   );
 }
