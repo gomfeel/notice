@@ -7,9 +7,9 @@ class NoticeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "노티스",
-      home: const Scaffold(
+    return const MaterialApp(
+      title: "\uB178\uD2F0\uC2A4",
+      home: Scaffold(
         body: SafeArea(
           child: ShareExtensionPlaceholder(),
         ),
