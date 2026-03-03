@@ -5,9 +5,11 @@ export function hasSupabaseEnv() {
 function getSupabaseEnv() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("SUPABASE_URL 또는 SUPABASE_ANON_KEY가 설정되지 않았습니다.");
+    throw new Error("SUPABASE_URL \uB610\uB294 SUPABASE_ANON_KEY\uAC00 \uC124\uC815\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
   }
+
   return { supabaseUrl, supabaseAnonKey };
 }
 
@@ -21,7 +23,7 @@ export async function insertLinkToSupabase(payload: {
   if (!hasSupabaseEnv()) {
     return {
       skipped: true,
-      reason: "SUPABASE_URL 또는 SUPABASE_ANON_KEY가 설정되지 않았습니다.",
+      reason: "SUPABASE_URL \uB610\uB294 SUPABASE_ANON_KEY\uAC00 \uC124\uC815\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
       payload,
     };
   }
@@ -40,7 +42,7 @@ export async function insertLinkToSupabase(payload: {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`링크 저장 실패: ${response.status} ${detail}`);
+    throw new Error(`\uB9C1\uD06C \uC800\uC7A5 \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   return response.json();
@@ -62,7 +64,7 @@ export async function updateLinkStatusInSupabase(id: string, status: "unread" | 
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`링크 상태 수정 실패: ${response.status} ${detail}`);
+    throw new Error(`\uB9C1\uD06C \uC0C1\uD0DC \uC218\uC815 \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   return response.json();
@@ -72,7 +74,7 @@ export async function listRecentLinksFromSupabase(limit = 20) {
   if (!hasSupabaseEnv()) {
     return {
       skipped: true,
-      reason: "SUPABASE_URL 또는 SUPABASE_ANON_KEY가 설정되지 않았습니다.",
+      reason: "SUPABASE_URL \uB610\uB294 SUPABASE_ANON_KEY\uAC00 \uC124\uC815\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
       items: [],
     };
   }
@@ -94,16 +96,16 @@ export async function listRecentLinksFromSupabase(limit = 20) {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`링크 목록 조회 실패: ${response.status} ${detail}`);
+    throw new Error(`\uB9C1\uD06C \uBAA9\uB85D \uC870\uD68C \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   const rows = await response.json();
   const items = (rows ?? []).map((row: any) => ({
     id: row.id,
     url: row.original_url,
-    title: row.title ?? "제목 없음",
+    title: row.title ?? "\uC81C\uBAA9 \uC5C6\uC74C",
     description: row.summary ?? "",
-    selectedFolder: row.folder_id ?? "미분류",
+    selectedFolder: row.folder_id ?? "\uBBF8\uBD84\uB958",
     confidence: 0,
     status: row.status === "read" ? "read" : "unread",
     createdAt: row.created_at,
@@ -137,7 +139,7 @@ export async function listFoldersFromSupabase() {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`폴더 목록 조회 실패: ${response.status} ${detail}`);
+    throw new Error(`\uD3F4\uB354 \uBAA9\uB85D \uC870\uD68C \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   const rows = await response.json();
@@ -158,7 +160,7 @@ export async function listTasksFromSupabase(limit = 50) {
 
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   const query = new URLSearchParams({
-    select: "id,content,is_completed,show_on_lock_screen,created_at",
+    select: "id,content,is_completed,show_on_lock_screen,starts_at,ends_at,created_at",
     order: "created_at.desc",
     limit: String(limit),
   });
@@ -173,7 +175,7 @@ export async function listTasksFromSupabase(limit = 50) {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`할 일 목록 조회 실패: ${response.status} ${detail}`);
+    throw new Error(`\uD560 \uC77C \uBAA9\uB85D \uC870\uD68C \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   const rows = await response.json();
@@ -182,6 +184,8 @@ export async function listTasksFromSupabase(limit = 50) {
     content: row.content,
     isCompleted: row.is_completed,
     showOnLockScreen: row.show_on_lock_screen,
+    startsAt: row.starts_at ?? null,
+    endsAt: row.ends_at ?? null,
     createdAt: row.created_at,
   }));
 
@@ -192,6 +196,8 @@ export async function insertTaskToSupabase(payload: {
   content: string;
   is_completed?: boolean;
   show_on_lock_screen?: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
 }) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
@@ -208,7 +214,7 @@ export async function insertTaskToSupabase(payload: {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`할 일 저장 실패: ${response.status} ${detail}`);
+    throw new Error(`\uD560 \uC77C \uC800\uC7A5 \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   return response.json();
@@ -230,7 +236,7 @@ export async function updateTaskCompletionInSupabase(id: string, isCompleted: bo
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`할 일 상태 수정 실패: ${response.status} ${detail}`);
+    throw new Error(`\uD560 \uC77C \uC0C1\uD0DC \uC218\uC815 \uC2E4\uD328: ${response.status} ${detail}`);
   }
 
   return response.json();

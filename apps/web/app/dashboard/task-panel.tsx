@@ -7,18 +7,29 @@ type TaskItem = {
   content: string;
   isCompleted: boolean;
   showOnLockScreen?: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
 };
 
 function sourceLabel(source: string) {
   if (source === "supabase") return "Supabase";
-  if (source === "memory") return "메모리";
-  if (source === "memory-fallback") return "메모리(대체)";
-  return "알 수 없음";
+  if (source === "memory") return "\uBA54\uBAA8\uB9AC";
+  if (source === "memory-fallback") return "\uBA54\uBAA8\uB9AC(\uB300\uCCB4)";
+  return "\uC54C \uC218 \uC5C6\uC74C";
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("ko-KR");
 }
 
 export default function TaskPanel() {
   const [content, setContent] = useState("");
   const [showOnLockScreen, setShowOnLockScreen] = useState(false);
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [source, setSource] = useState("unknown");
   const [error, setError] = useState("");
@@ -32,13 +43,13 @@ export default function TaskPanel() {
 
   useEffect(() => {
     loadTasks().catch(() => {
-      setError("할 일 목록을 불러오지 못했습니다.");
+      setError("\uD560 \uC77C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
     });
   }, []);
 
   async function createTask() {
     if (!content.trim()) {
-      setError("할 일 내용을 입력해 주세요.");
+      setError("\uD560 \uC77C \uB0B4\uC6A9\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694.");
       return;
     }
 
@@ -46,17 +57,24 @@ export default function TaskPanel() {
     const response = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, showOnLockScreen }),
+      body: JSON.stringify({
+        content,
+        showOnLockScreen,
+        startsAt: startsAt || null,
+        endsAt: endsAt || null,
+      }),
     });
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "할 일을 추가하지 못했습니다.");
+      setError(data.error ?? "\uD560 \uC77C\uC744 \uCD94\uAC00\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
       return;
     }
 
     setContent("");
     setShowOnLockScreen(false);
+    setStartsAt("");
+    setEndsAt("");
     await loadTasks();
   }
 
@@ -69,7 +87,7 @@ export default function TaskPanel() {
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "할 일 상태를 변경하지 못했습니다.");
+      setError(data.error ?? "\uD560 \uC77C \uC0C1\uD0DC\uB97C \uBCC0\uACBD\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
       return;
     }
 
@@ -78,27 +96,37 @@ export default function TaskPanel() {
 
   return (
     <section style={{ marginTop: 28 }}>
-      <h2>할 일 관리</h2>
-      <p>데이터 소스: {sourceLabel(source)}</p>
+      <h2>\uD560 \uC77C \uAD00\uB9AC</h2>
+      <p>\uB370\uC774\uD130 \uC18C\uC2A4: {sourceLabel(source)}</p>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 900 }}>
+      <div style={{ display: "grid", gap: 8, maxWidth: 900 }}>
         <input
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          placeholder="할 일 내용을 입력하세요"
-          style={{ flex: 1, padding: 10 }}
+          placeholder="\uD560 \uC77C \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694"
+          style={{ padding: 10 }}
         />
-        <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={showOnLockScreen}
-            onChange={(event) => setShowOnLockScreen(event.target.checked)}
-          />
-          잠금화면 표시
-        </label>
-        <button onClick={createTask} style={{ padding: "10px 14px" }}>
-          추가
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <span>\uC2DC\uC791</span>
+            <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+          </label>
+          <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <span>\uC885\uB8CC</span>
+            <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+          </label>
+          <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={showOnLockScreen}
+              onChange={(event) => setShowOnLockScreen(event.target.checked)}
+            />
+            \uC7A0\uAE08\uD654\uBA74 \uD45C\uC2DC
+          </label>
+          <button onClick={createTask} style={{ padding: "10px 14px" }}>
+            \uCD94\uAC00
+          </button>
+        </div>
       </div>
 
       {error ? <p style={{ color: "#b00020" }}>{error}</p> : null}
@@ -116,10 +144,14 @@ export default function TaskPanel() {
                 {task.content}
               </span>
             </label>
+            <div style={{ marginLeft: 24, fontSize: 13, opacity: 0.85 }}>
+              <div>\uC2DC\uC791: {formatDate(task.startsAt)}</div>
+              <div>\uC885\uB8CC: {formatDate(task.endsAt)}</div>
+            </div>
           </li>
         ))}
       </ul>
-      {tasks.length === 0 ? <p>등록된 할 일이 없습니다.</p> : null}
+      {tasks.length === 0 ? <p>\uB4F1\uB85D\uB41C \uD560 \uC77C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</p> : null}
     </section>
   );
 }
