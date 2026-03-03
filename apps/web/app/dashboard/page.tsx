@@ -1,4 +1,5 @@
 import IntakeForm from "./intake-form";
+import TaskPanel from "./task-panel";
 
 const phase1Checklist = [
   "공유 링크 URL 수집 경로",
@@ -18,6 +19,7 @@ export default function DashboardPage() {
         ))}
       </ul>
       <IntakeForm />
+      <TaskPanel />
     </main>
   );
 }

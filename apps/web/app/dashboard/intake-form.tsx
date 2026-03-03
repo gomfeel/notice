@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+type IntakeStatus = "unread" | "read";
+
 type RecentItem = {
   id: string;
   url: string;
   title: string;
   selectedFolder: string;
   confidence: number;
+  status: IntakeStatus;
   createdAt: string;
 };
 
@@ -22,6 +25,10 @@ function sourceLabel(source: string) {
   if (source === "memory") return "메모리";
   if (source === "memory-fallback") return "메모리(대체)";
   return "알 수 없음";
+}
+
+function statusLabel(status: IntakeStatus) {
+  return status === "read" ? "확인 완료" : "확인 전";
 }
 
 export default function IntakeForm() {
@@ -72,6 +79,23 @@ export default function IntakeForm() {
     setNewFolderName("");
     setResult(JSON.stringify(data, null, 2));
     await loadFolders();
+  }
+
+  async function toggleStatus(item: RecentItem) {
+    const nextStatus: IntakeStatus = item.status === "read" ? "unread" : "read";
+    const response = await fetch(`/api/intake/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      setResult(data.error ?? "링크 상태를 변경하지 못했습니다.");
+      return;
+    }
+
+    await loadItems();
   }
 
   async function submit() {
@@ -163,7 +187,13 @@ export default function IntakeForm() {
               <strong>{item.title}</strong>
               <div>폴더: {item.selectedFolder}</div>
               <div>신뢰도: {item.confidence}</div>
-              <div>
+              <div>상태: {statusLabel(item.status)}</div>
+              <div style={{ marginTop: 6 }}>
+                <button onClick={() => toggleStatus(item)} style={{ padding: "6px 10px" }}>
+                  {item.status === "read" ? "확인 전으로" : "확인 완료로"}
+                </button>
+              </div>
+              <div style={{ marginTop: 4 }}>
                 <a href={item.url} target="_blank" rel="noreferrer">
                   {item.url}
                 </a>

@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       description: finalDescription,
       selectedFolder: selectedFolderName ?? "미분류",
       confidence: Number(classification.confidence ?? 0),
+      status: "unread" as const,
       createdAt: new Date().toISOString(),
     };
 
