@@ -4,7 +4,7 @@ import {
   updateTaskItemLockScreen,
 } from "../../../../lib/tasks/store";
 import { authorizeApiRequest } from "../../../../lib/security/api-token";
-import { resolveRequestUserId } from "../../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestUserId } from "../../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   updateTaskFieldsInSupabase,
@@ -36,6 +36,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const showOnLockScreen = hasShowOnLockScreen ? Boolean(body?.showOnLockScreen) : undefined;
 
     if (hasSupabaseEnv()) {
+      const required = requireUserIdForSupabase(user.userId);
+      if (!required.ok) {
+        return Response.json({ error: required.message }, { status: 400 });
+      }
       const updated = await updateTaskFieldsInSupabase(params.id, {
         ...(hasIsCompleted ? { is_completed: isCompleted } : {}),
         ...(hasShowOnLockScreen ? { show_on_lock_screen: showOnLockScreen } : {}),

@@ -32,3 +32,14 @@ export function resolveRequestUserId(request: Request) {
 
   return { ok: true as const, userId };
 }
+
+export function requireUserIdForSupabase(userId: string | null | undefined) {
+  if (!userId) {
+    return {
+      ok: false as const,
+      message:
+        "\uC0AC\uC6A9\uC790 ID\uAC00 \uD544\uC218\uC785\uB2C8\uB2E4. x-notice-user-id \uD5E4\uB354\uB97C \uC124\uC815\uD558\uC138\uC694.",
+    };
+  }
+  return { ok: true as const };
+}

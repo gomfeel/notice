@@ -4,7 +4,7 @@ import { listFolderItems } from "../../../lib/folders/store";
 import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
-import { resolveRequestUserId } from "../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   insertLinkToSupabase,
@@ -22,6 +22,10 @@ export async function GET(request: Request) {
   }
 
   if (hasSupabaseEnv()) {
+    const required = requireUserIdForSupabase(user.userId);
+    if (!required.ok) {
+      return Response.json({ error: required.message }, { status: 400 });
+    }
     const recent = await listRecentLinksFromSupabase(20, user.userId);
     return Response.json({ source: "supabase", items: recent.items });
   }
@@ -62,6 +66,13 @@ export async function POST(request: Request) {
 
     const selectedFolderName = classification.selectedFolder as string | undefined;
     const selectedFolder = folders.find((folder: { id?: string; name: string }) => folder.name === selectedFolderName);
+
+    if (hasSupabaseEnv()) {
+      const required = requireUserIdForSupabase(user.userId);
+      if (!required.ok) {
+        return Response.json({ error: required.message }, { status: 400 });
+      }
+    }
 
     const inserted = await insertLinkToSupabase({
       folder_id: selectedFolder?.id ?? null,

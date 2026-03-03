@@ -1,6 +1,6 @@
 import { addTaskItem, listTaskItems } from "../../../lib/tasks/store";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
-import { resolveRequestUserId } from "../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   insertTaskToSupabase,
@@ -20,6 +20,10 @@ export async function GET(request: Request) {
   }
 
   if (hasSupabaseEnv()) {
+    const required = requireUserIdForSupabase(user.userId);
+    if (!required.ok) {
+      return Response.json({ error: required.message }, { status: 400 });
+    }
     try {
       const result = await listTasksFromSupabase(50, user.userId);
       return Response.json({ source: "supabase", items: result.items });
@@ -49,6 +53,10 @@ export async function POST(request: Request) {
     const endsAt = normalizeDateTime(body?.endsAt);
 
     if (hasSupabaseEnv()) {
+      const required = requireUserIdForSupabase(user.userId);
+      if (!required.ok) {
+        return Response.json({ error: required.message }, { status: 400 });
+      }
       const inserted = await insertTaskToSupabase({
         content,
         is_completed: false,
