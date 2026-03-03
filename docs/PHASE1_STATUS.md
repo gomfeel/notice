@@ -20,13 +20,17 @@
 - Supabase 저장 경로:
   - 환경 변수 설정 시 실제 저장
   - 미설정 시 메모리 대체
+- API 최소 보호 레이어:
+  - `NOTICE_API_TOKEN` 설정 시 외부 요청 토큰 검사
+  - 동일 오리진 브라우저 요청은 허용
 - 모바일 Share Extension 착수:
   - iOS ShareViewController 템플릿 추가
   - Flutter MethodChannel 수신 코드 추가
+  - Runner AppDelegate MethodChannel 템플릿 추가
 
 ## Remaining for production
 - iOS Share Extension Xcode 타깃 실제 연결 및 App Group 설정
-- iOS Runner MethodChannel 네이티브 구현(AppDelegate/SceneDelegate)
+- iOS Runner AppDelegate 템플릿 실제 반영/빌드 검증
 - 실제 사용자 인증 세션 기반 RLS 검증
 - 재시도 큐 및 관측성(로그/알림)
 - 프롬프트 버전 관리 체계

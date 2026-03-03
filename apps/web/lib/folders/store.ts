@@ -6,9 +6,9 @@ export interface FolderItem {
 }
 
 const folderItems: FolderItem[] = [
-  { id: "f_stock", name: "주식", description: "투자 관련 링크", createdAt: new Date().toISOString() },
-  { id: "f_travel", name: "여행", description: "여행 계획 및 정보", createdAt: new Date().toISOString() },
-  { id: "f_work", name: "업무", description: "업무 및 프로젝트", createdAt: new Date().toISOString() },
+  { id: "f_stock", name: "\uC8FC\uC2DD", description: "\uD22C\uC790 \uAD00\uB828 \uB9C1\uD06C", createdAt: new Date().toISOString() },
+  { id: "f_travel", name: "\uC5EC\uD589", description: "\uC5EC\uD589 \uACC4\uD68D \uBC0F \uC815\uBCF4", createdAt: new Date().toISOString() },
+  { id: "f_work", name: "\uC5C5\uBB34", description: "\uC5C5\uBB34 \uBC0F \uD504\uB85C\uC81D\uD2B8", createdAt: new Date().toISOString() },
 ];
 
 export function listFolderItems() {
@@ -18,12 +18,12 @@ export function listFolderItems() {
 export function addFolderItem(name: string, description?: string) {
   const normalizedName = name.trim();
   if (!normalizedName) {
-    throw new Error("폴더 이름은 필수입니다.");
+    throw new Error("\uD3F4\uB354 \uC774\uB984\uC740 \uD544\uC218\uC785\uB2C8\uB2E4.");
   }
 
   const exists = folderItems.some((item) => item.name === normalizedName);
   if (exists) {
-    throw new Error("이미 존재하는 폴더입니다.");
+    throw new Error("\uC774\uBBF8 \uC874\uC7AC\uD558\uB294 \uD3F4\uB354\uC785\uB2C8\uB2E4.");
   }
 
   const item: FolderItem = {

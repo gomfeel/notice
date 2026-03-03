@@ -1,4 +1,5 @@
 import { addTaskItem, listTaskItems } from "../../../lib/tasks/store";
+import { authorizeApiRequest } from "../../../lib/security/api-token";
 import {
   hasSupabaseEnv,
   insertTaskToSupabase,
@@ -25,6 +26,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = authorizeApiRequest(request);
+  if (!auth.ok) {
+    return Response.json({ error: auth.message }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const content = String(body?.content ?? "");

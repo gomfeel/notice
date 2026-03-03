@@ -27,7 +27,7 @@ export function listIntakeItems() {
 export function updateIntakeStatus(id: string, status: IntakeStatus) {
   const item = intakeItems.find((it) => it.id === id);
   if (!item) {
-    throw new Error("링크를 찾을 수 없습니다.");
+    throw new Error("\uB9C1\uD06C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
   }
 
   item.status = status;

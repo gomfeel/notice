@@ -3,6 +3,7 @@ import { categorizeWithEdgeFunction } from "../../../lib/ai/categorize";
 import { listFolderItems } from "../../../lib/folders/store";
 import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
+import { authorizeApiRequest } from "../../../lib/security/api-token";
 import {
   hasSupabaseEnv,
   insertLinkToSupabase,
@@ -23,6 +24,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = authorizeApiRequest(request);
+  if (!auth.ok) {
+    return Response.json({ error: auth.message }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const incomingFolders = Array.isArray(body?.folders) ? body.folders : [];
@@ -30,11 +36,11 @@ export async function POST(request: Request) {
     const { url, title, description } = body;
 
     if (!url) {
-      return Response.json({ error: "URL은 필수입니다." }, { status: 400 });
+      return Response.json({ error: "URL\uC740 \uD544\uC218\uC785\uB2C8\uB2E4." }, { status: 400 });
     }
 
     const metadata = await fetchMetadataFromUrl(url);
-    const finalTitle = title || metadata.title || "제목 없음";
+    const finalTitle = title || metadata.title || "\uC81C\uBAA9 \uC5C6\uC74C";
     const finalDescription = description || metadata.description || "";
 
     const classification = await categorizeWithEdgeFunction({
@@ -60,7 +66,7 @@ export async function POST(request: Request) {
       url,
       title: finalTitle,
       description: finalDescription,
-      selectedFolder: selectedFolderName ?? "미분류",
+      selectedFolder: selectedFolderName ?? "\uBBF8\uBD84\uB958",
       confidence: Number(classification.confidence ?? 0),
       status: "unread" as const,
       createdAt: new Date().toISOString(),
@@ -81,7 +87,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다." },
+      { error: error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." },
       { status: 500 }
     );
   }
