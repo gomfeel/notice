@@ -1,7 +1,7 @@
 import { addFolderItem, listFolderItems } from "../../../lib/folders/store";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
 import { resolveRequestUserId } from "../../../lib/security/request-context";
-import { hasSupabaseEnv, listFoldersFromSupabase } from "../../../lib/supabase/rest";
+import { hasSupabaseEnv, insertFolderToSupabase, listFoldersFromSupabase } from "../../../lib/supabase/rest";
 
 export async function GET(request: Request) {
   const user = resolveRequestUserId(request);
@@ -26,12 +26,33 @@ export async function POST(request: Request) {
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
+  const user = resolveRequestUserId(request);
+  if (!user.ok) {
+    return Response.json({ error: user.message }, { status: 400 });
+  }
 
   try {
     const body = await request.json();
     const { name, description } = body;
+
+    if (hasSupabaseEnv()) {
+      try {
+        const inserted = await insertFolderToSupabase(
+          {
+            name: String(name ?? ""),
+            icon: description ? String(description) : null,
+          },
+          user.userId
+        );
+        return Response.json({ source: "supabase", item: inserted[0] ?? inserted }, { status: 201 });
+      } catch {
+        const fallback = addFolderItem(String(name ?? ""), description ? String(description) : "");
+        return Response.json({ source: "memory-fallback", item: fallback }, { status: 201 });
+      }
+    }
+
     const item = addFolderItem(String(name ?? ""), description ? String(description) : "");
-    return Response.json({ item }, { status: 201 });
+    return Response.json({ source: "memory", item }, { status: 201 });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." },

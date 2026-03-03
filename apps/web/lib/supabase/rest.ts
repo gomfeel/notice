@@ -172,6 +172,31 @@ export async function listFoldersFromSupabase(userId?: string | null) {
   return { skipped: false, items };
 }
 
+export async function insertFolderToSupabase(payload: { name: string; icon?: string | null }, userId?: string | null) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/folders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      ...payload,
+      ...(userId ? { user_id: userId } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`폴더 저장 실패: ${response.status} ${detail}`);
+  }
+
+  return response.json();
+}
+
 export async function listTasksFromSupabase(limit = 50, userId?: string | null) {
   if (!hasSupabaseEnv()) {
     return { skipped: true, items: [] };
