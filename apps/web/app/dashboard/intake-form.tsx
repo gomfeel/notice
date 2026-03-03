@@ -63,15 +63,30 @@ export default function IntakeForm() {
   const [sortBy, setSortBy] = useState<IntakeSort>("created_desc");
   const [search, setSearch] = useState("");
 
+  function requestHeaders() {
+    const userId = window.localStorage.getItem("notice_user_id")?.trim();
+    const headers: Record<string, string> = {};
+    if (userId) headers["x-notice-user-id"] = userId;
+    return headers;
+  }
+
   async function loadItems() {
-    const response = await fetch("/api/intake", { method: "GET", cache: "no-store" });
+    const response = await fetch("/api/intake", {
+      method: "GET",
+      cache: "no-store",
+      headers: requestHeaders(),
+    });
     const data = await response.json();
     setItems(data.items ?? []);
     setSource(data.source ?? "unknown");
   }
 
   async function loadFolders() {
-    const response = await fetch("/api/folders", { method: "GET", cache: "no-store" });
+    const response = await fetch("/api/folders", {
+      method: "GET",
+      cache: "no-store",
+      headers: requestHeaders(),
+    });
     const data = await response.json();
     setFolders(data.items ?? []);
   }
@@ -146,7 +161,7 @@ export default function IntakeForm() {
 
     const response = await fetch("/api/folders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...requestHeaders() },
       body: JSON.stringify({ name: newFolderName.trim() }),
     });
     const data = await response.json();
@@ -164,7 +179,7 @@ export default function IntakeForm() {
     const nextStatus: IntakeStatus = item.status === "read" ? "unread" : "read";
     const response = await fetch(`/api/intake/${item.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...requestHeaders() },
       body: JSON.stringify({ status: nextStatus }),
     });
 
@@ -189,7 +204,7 @@ export default function IntakeForm() {
     try {
       const response = await fetch("/api/intake", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...requestHeaders() },
         body: JSON.stringify({ url, folders }),
       });
 

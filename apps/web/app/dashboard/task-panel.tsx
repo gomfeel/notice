@@ -49,8 +49,19 @@ export default function TaskPanel() {
   const [sortBy, setSortBy] = useState<TaskSort>("created_desc");
   const [query, setQuery] = useState("");
 
+  function requestHeaders() {
+    const userId = window.localStorage.getItem("notice_user_id")?.trim();
+    const headers: Record<string, string> = {};
+    if (userId) headers["x-notice-user-id"] = userId;
+    return headers;
+  }
+
   async function loadTasks() {
-    const response = await fetch("/api/tasks", { method: "GET", cache: "no-store" });
+    const response = await fetch("/api/tasks", {
+      method: "GET",
+      cache: "no-store",
+      headers: requestHeaders(),
+    });
     const data = await response.json();
     setTasks(data.items ?? []);
     setSource(data.source ?? "unknown");
@@ -163,7 +174,7 @@ export default function TaskPanel() {
     setError("");
     const response = await fetch("/api/tasks", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...requestHeaders() },
       body: JSON.stringify({
         content,
         showOnLockScreen,
@@ -188,7 +199,7 @@ export default function TaskPanel() {
   async function toggleTask(task: TaskItem) {
     const response = await fetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...requestHeaders() },
       body: JSON.stringify({ isCompleted: !task.isCompleted }),
     });
     const data = await response.json();
@@ -204,7 +215,7 @@ export default function TaskPanel() {
   async function toggleLockScreen(task: TaskItem) {
     const response = await fetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...requestHeaders() },
       body: JSON.stringify({ showOnLockScreen: !Boolean(task.showOnLockScreen) }),
     });
     const data = await response.json();
