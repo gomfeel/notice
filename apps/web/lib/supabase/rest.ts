@@ -98,7 +98,7 @@ export async function listRecentLinksFromSupabase(limit = 20, userId?: string | 
 
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   const query = new URLSearchParams({
-    select: "id,original_url,title,summary,created_at,folder_id,status",
+    select: "id,original_url,title,summary,created_at,folder_id,status,folder:folders(name)",
     order: "created_at.desc",
     limit: String(limit),
   });
@@ -123,7 +123,7 @@ export async function listRecentLinksFromSupabase(limit = 20, userId?: string | 
     url: row.original_url,
     title: row.title ?? "\uC81C\uBAA9 \uC5C6\uC74C",
     description: row.summary ?? "",
-    selectedFolder: row.folder_id ?? "\uBBF8\uBD84\uB958",
+    selectedFolder: row?.folder?.name ?? row?.folders?.name ?? row?.folder_id ?? "\uBBF8\uBD84\uB958",
     confidence: 0,
     status: row.status === "read" ? "read" : "unread",
     createdAt: row.created_at,
