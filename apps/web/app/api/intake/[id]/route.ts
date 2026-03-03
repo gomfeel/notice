@@ -1,4 +1,5 @@
 import { updateIntakeStatus } from "../../../../lib/intake/store";
+import { logApiError } from "../../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../../lib/security/api-token";
 import { requireUserIdForSupabase, resolveRequestUserId } from "../../../../lib/security/request-context";
 import {
@@ -32,6 +33,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const item = updateIntakeStatus(params.id, status);
     return Response.json({ item });
   } catch (error) {
+    logApiError({
+      endpoint: "/api/intake/[id]",
+      method: "PATCH",
+      userId: user.userId,
+      stage: "patch_intake_status",
+      error,
+    });
     return Response.json(
       { error: error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." },
       { status: 400 }

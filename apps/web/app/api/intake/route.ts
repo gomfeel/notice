@@ -3,6 +3,7 @@ import { categorizeWithEdgeFunction } from "../../../lib/ai/categorize";
 import { listFolderItems } from "../../../lib/folders/store";
 import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
+import { logApiError } from "../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
 import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
 import {
@@ -26,8 +27,19 @@ export async function GET(request: Request) {
     if (!required.ok) {
       return Response.json({ error: required.message }, { status: 400 });
     }
-    const recent = await listRecentLinksFromSupabase(20, user.userId);
-    return Response.json({ source: "supabase", items: recent.items });
+    try {
+      const recent = await listRecentLinksFromSupabase(20, user.userId);
+      return Response.json({ source: "supabase", items: recent.items });
+    } catch (error) {
+      logApiError({
+        endpoint: "/api/intake",
+        method: "GET",
+        userId: user.userId,
+        stage: "list_recent_links",
+        error,
+      });
+      return Response.json({ source: "memory-fallback", items: listIntakeItems() });
+    }
   }
 
   return Response.json({ source: "memory", items: listIntakeItems() });
@@ -107,6 +119,13 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    logApiError({
+      endpoint: "/api/intake",
+      method: "POST",
+      userId: user.userId,
+      stage: "post_intake",
+      error,
+    });
     return Response.json(
       { error: error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." },
       { status: 500 }

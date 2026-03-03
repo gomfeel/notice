@@ -1,4 +1,5 @@
 import { addTaskItem, listTaskItems } from "../../../lib/tasks/store";
+import { logApiError } from "../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
 import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
 import {
@@ -27,7 +28,14 @@ export async function GET(request: Request) {
     try {
       const result = await listTasksFromSupabase(50, user.userId);
       return Response.json({ source: "supabase", items: result.items });
-    } catch {
+    } catch (error) {
+      logApiError({
+        endpoint: "/api/tasks",
+        method: "GET",
+        userId: user.userId,
+        stage: "list_tasks_supabase",
+        error,
+      });
       return Response.json({ source: "memory-fallback", items: listTaskItems() });
     }
   }
@@ -70,6 +78,13 @@ export async function POST(request: Request) {
     const item = addTaskItem(content, showOnLockScreen, startsAt, endsAt);
     return Response.json({ item }, { status: 201 });
   } catch (error) {
+    logApiError({
+      endpoint: "/api/tasks",
+      method: "POST",
+      userId: user.userId,
+      stage: "post_task",
+      error,
+    });
     return Response.json(
       { error: error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." },
       { status: 400 }
