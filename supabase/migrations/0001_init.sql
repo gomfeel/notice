@@ -1,4 +1,4 @@
-﻿-- Notice initial schema
+-- Notice initial schema
 
 create extension if not exists pgcrypto;
 

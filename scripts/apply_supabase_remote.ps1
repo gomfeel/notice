@@ -29,7 +29,7 @@ Invoke-Step "Link project ($ProjectRef)" {
 }
 
 Invoke-Step "Apply migrations (db push)" {
-  npx supabase@latest db push
+  npx supabase@latest db push --yes
   Ensure-Success $LASTEXITCODE "supabase db push failed."
 }
 
