@@ -15,3 +15,8 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Supabase / temp artifacts
+supabase/.temp/
+tmp_ios_ci_logs/
+tmp_ios_ci_logs.zip
