@@ -20,6 +20,32 @@ function getSupabaseAuthHeaders(supabaseAnonKey: string, accessToken?: string | 
   };
 }
 
+async function ensureUserInSupabase(scope?: SupabaseRequestScope) {
+  const userId = scope?.userId?.trim();
+  if (!userId || !hasSupabaseEnv()) return;
+
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  const response = await fetch(`${supabaseUrl}/rest/v1/users?on_conflict=id`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify([
+      {
+        id: userId,
+        email: `${userId}@notice.local`,
+      },
+    ]),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`사용자 보장 실패: ${response.status} ${detail}`);
+  }
+}
+
 function getSupabaseEnv() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -47,6 +73,7 @@ export async function insertLinkToSupabase(payload: {
   }
 
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  await ensureUserInSupabase(scope);
   const response = await fetch(`${supabaseUrl}/rest/v1/links`, {
     method: "POST",
     headers: {
@@ -182,6 +209,7 @@ export async function listFoldersFromSupabase(scope?: SupabaseRequestScope) {
 
 export async function insertFolderToSupabase(payload: { name: string; icon?: string | null }, scope?: SupabaseRequestScope) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  await ensureUserInSupabase(scope);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/folders`, {
     method: "POST",
@@ -251,6 +279,7 @@ export async function insertTaskToSupabase(payload: {
   ends_at?: string | null;
 }, scope?: SupabaseRequestScope) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  await ensureUserInSupabase(scope);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks`, {
     method: "POST",
