@@ -3,7 +3,7 @@ import { categorizeWithEdgeFunction } from "../../../lib/ai/categorize";
 import { listFolderItems } from "../../../lib/folders/store";
 import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
-import { logApiError } from "../../../lib/observability/api-log";
+import { logApiError, logApiInfo, resolveRequestId } from "../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
 import { requireUserIdForSupabase, resolveRequestScope } from "../../../lib/security/request-context";
 import {
@@ -25,43 +25,62 @@ function isValidHttpUrl(value: string) {
   }
 }
 
+function jsonWithRequestId(body: unknown, requestId: string, status = 200) {
+  return Response.json(body, { status, headers: { "x-request-id": requestId } });
+}
+
 export async function GET(request: Request) {
+  const startedAt = Date.now();
+  const requestId = resolveRequestId(request);
   const scope = resolveRequestScope(request);
   if (!scope.ok) {
-    return Response.json({ error: scope.message }, { status: 400 });
+    return jsonWithRequestId({ error: scope.message }, requestId, 400);
   }
 
   if (hasSupabaseEnv()) {
     const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
     if (!required.ok) {
-      return Response.json({ error: required.message }, { status: 400 });
+      return jsonWithRequestId({ error: required.message }, requestId, 400);
     }
     try {
       const recent = await listRecentLinksFromSupabase(20, scope);
-      return Response.json({ source: "supabase", items: recent.items });
+      logApiInfo({
+        endpoint: "/api/intake",
+        method: "GET",
+        stage: "list_recent_links",
+        userId: scope.userId,
+        requestId,
+        statusCode: 200,
+        durationMs: Date.now() - startedAt,
+      });
+      return jsonWithRequestId({ source: "supabase", items: recent.items }, requestId);
     } catch (error) {
       logApiError({
         endpoint: "/api/intake",
         method: "GET",
         userId: scope.userId,
+        requestId,
+        durationMs: Date.now() - startedAt,
         stage: "list_recent_links",
         error,
       });
-      return Response.json({ source: "memory-fallback", items: listIntakeItems() });
+      return jsonWithRequestId({ source: "memory-fallback", items: listIntakeItems() }, requestId);
     }
   }
 
-  return Response.json({ source: "memory", items: listIntakeItems() });
+  return jsonWithRequestId({ source: "memory", items: listIntakeItems() }, requestId);
 }
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const requestId = resolveRequestId(request);
   const auth = authorizeApiRequest(request);
   if (!auth.ok) {
-    return Response.json({ error: auth.message }, { status: 401 });
+    return jsonWithRequestId({ error: auth.message }, requestId, 401);
   }
   const scope = resolveRequestScope(request);
   if (!scope.ok) {
-    return Response.json({ error: scope.message }, { status: 400 });
+    return jsonWithRequestId({ error: scope.message }, requestId, 400);
   }
 
   try {
@@ -72,10 +91,10 @@ export async function POST(request: Request) {
     const { title, description } = body;
 
     if (!url) {
-      return Response.json({ error: "URL\uC740 \uD544\uC218\uC785\uB2C8\uB2E4." }, { status: 400 });
+      return jsonWithRequestId({ error: "URL\uC740 \uD544\uC218\uC785\uB2C8\uB2E4." }, requestId, 400);
     }
     if (!isValidHttpUrl(url)) {
-      return Response.json({ error: "\uC62C\uBC14\uB978 URL\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694. (http/https)" }, { status: 400 });
+      return jsonWithRequestId({ error: "\uC62C\uBC14\uB978 URL\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694. (http/https)" }, requestId, 400);
     }
 
     const metadata = await fetchMetadataFromUrl(url);
@@ -95,7 +114,7 @@ export async function POST(request: Request) {
     if (hasSupabaseEnv()) {
       const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
       if (!required.ok) {
-        return Response.json({ error: required.message }, { status: 400 });
+        return jsonWithRequestId({ error: required.message }, requestId, 400);
       }
     }
 
@@ -122,26 +141,39 @@ export async function POST(request: Request) {
       addIntakeItem(item);
     }
 
-    return Response.json(
+    logApiInfo({
+      endpoint: "/api/intake",
+      method: "POST",
+      stage: "post_intake",
+      userId: scope.userId,
+      requestId,
+      statusCode: 201,
+      durationMs: Date.now() - startedAt,
+    });
+    return jsonWithRequestId(
       {
         metadata: { title: finalTitle, description: finalDescription },
         classification,
         inserted,
         item,
       },
-      { status: 201 }
+      requestId,
+      201
     );
   } catch (error) {
     logApiError({
       endpoint: "/api/intake",
       method: "POST",
       userId: scope.userId,
+      requestId,
+      durationMs: Date.now() - startedAt,
       stage: "post_intake",
       error,
     });
-    return Response.json(
+    return jsonWithRequestId(
       { error: error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." },
-      { status: 500 }
+      requestId,
+      500
     );
   }
 }
