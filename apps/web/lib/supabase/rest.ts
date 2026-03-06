@@ -2,10 +2,22 @@ export function hasSupabaseEnv() {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
 }
 
+export type SupabaseRequestScope = {
+  userId?: string | null;
+  accessToken?: string | null;
+};
+
 function applyUserScope(query: URLSearchParams, userId?: string | null) {
   if (userId && userId.trim()) {
     query.set("user_id", `eq.${userId.trim()}`);
   }
+}
+
+function getSupabaseAuthHeaders(supabaseAnonKey: string, accessToken?: string | null) {
+  return {
+    apikey: supabaseAnonKey,
+    Authorization: `Bearer ${accessToken?.trim() || supabaseAnonKey}`,
+  };
 }
 
 function getSupabaseEnv() {
@@ -25,7 +37,7 @@ export async function insertLinkToSupabase(payload: {
   title?: string;
   summary?: string;
   status?: string;
-}, userId?: string | null) {
+}, scope?: SupabaseRequestScope) {
   if (!hasSupabaseEnv()) {
     return {
       skipped: true,
@@ -39,13 +51,12 @@ export async function insertLinkToSupabase(payload: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
       Prefer: "return=representation",
     },
     body: JSON.stringify({
       ...payload,
-      ...(userId ? { user_id: userId } : {}),
+      ...(scope?.userId ? { user_id: scope.userId } : {}),
     }),
   });
 
@@ -60,20 +71,19 @@ export async function insertLinkToSupabase(payload: {
 export async function updateLinkStatusInSupabase(
   id: string,
   status: "unread" | "read",
-  userId?: string | null
+  scope?: SupabaseRequestScope
 ) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   const query = new URLSearchParams({
     id: `eq.${id}`,
   });
-  applyUserScope(query, userId);
+  applyUserScope(query, scope?.userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/links?${query.toString()}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
       Prefer: "return=representation",
     },
     body: JSON.stringify({ status }),
@@ -87,7 +97,7 @@ export async function updateLinkStatusInSupabase(
   return response.json();
 }
 
-export async function listRecentLinksFromSupabase(limit = 20, userId?: string | null) {
+export async function listRecentLinksFromSupabase(limit = 20, scope?: SupabaseRequestScope) {
   if (!hasSupabaseEnv()) {
     return {
       skipped: true,
@@ -102,13 +112,12 @@ export async function listRecentLinksFromSupabase(limit = 20, userId?: string | 
     order: "created_at.desc",
     limit: String(limit),
   });
-  applyUserScope(query, userId);
+  applyUserScope(query, scope?.userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/links?${query.toString()}`, {
     method: "GET",
     headers: {
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
     },
   });
 
@@ -135,7 +144,7 @@ export async function listRecentLinksFromSupabase(limit = 20, userId?: string | 
   };
 }
 
-export async function listFoldersFromSupabase(userId?: string | null) {
+export async function listFoldersFromSupabase(scope?: SupabaseRequestScope) {
   if (!hasSupabaseEnv()) {
     return { skipped: true, items: [] };
   }
@@ -146,13 +155,12 @@ export async function listFoldersFromSupabase(userId?: string | null) {
     order: "created_at.desc",
     limit: "100",
   });
-  applyUserScope(query, userId);
+  applyUserScope(query, scope?.userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/folders?${query.toString()}`, {
     method: "GET",
     headers: {
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
     },
   });
 
@@ -172,20 +180,19 @@ export async function listFoldersFromSupabase(userId?: string | null) {
   return { skipped: false, items };
 }
 
-export async function insertFolderToSupabase(payload: { name: string; icon?: string | null }, userId?: string | null) {
+export async function insertFolderToSupabase(payload: { name: string; icon?: string | null }, scope?: SupabaseRequestScope) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
   const response = await fetch(`${supabaseUrl}/rest/v1/folders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
       Prefer: "return=representation",
     },
     body: JSON.stringify({
       ...payload,
-      ...(userId ? { user_id: userId } : {}),
+      ...(scope?.userId ? { user_id: scope.userId } : {}),
     }),
   });
 
@@ -197,7 +204,7 @@ export async function insertFolderToSupabase(payload: { name: string; icon?: str
   return response.json();
 }
 
-export async function listTasksFromSupabase(limit = 50, userId?: string | null) {
+export async function listTasksFromSupabase(limit = 50, scope?: SupabaseRequestScope) {
   if (!hasSupabaseEnv()) {
     return { skipped: true, items: [] };
   }
@@ -208,13 +215,12 @@ export async function listTasksFromSupabase(limit = 50, userId?: string | null) 
     order: "created_at.desc",
     limit: String(limit),
   });
-  applyUserScope(query, userId);
+  applyUserScope(query, scope?.userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks?${query.toString()}`, {
     method: "GET",
     headers: {
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
     },
   });
 
@@ -243,20 +249,19 @@ export async function insertTaskToSupabase(payload: {
   show_on_lock_screen?: boolean;
   starts_at?: string | null;
   ends_at?: string | null;
-}, userId?: string | null) {
+}, scope?: SupabaseRequestScope) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
       Prefer: "return=representation",
     },
     body: JSON.stringify({
       ...payload,
-      ...(userId ? { user_id: userId } : {}),
+      ...(scope?.userId ? { user_id: scope.userId } : {}),
     }),
   });
 
@@ -278,20 +283,19 @@ export async function updateTaskFieldsInSupabase(
     is_completed?: boolean;
     show_on_lock_screen?: boolean;
   },
-  userId?: string | null
+  scope?: SupabaseRequestScope
 ) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   const query = new URLSearchParams({
     id: `eq.${id}`,
   });
-  applyUserScope(query, userId);
+  applyUserScope(query, scope?.userId);
 
   const response = await fetch(`${supabaseUrl}/rest/v1/tasks?${query.toString()}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
+      ...getSupabaseAuthHeaders(supabaseAnonKey, scope?.accessToken),
       Prefer: "return=representation",
     },
     body: JSON.stringify(fields),

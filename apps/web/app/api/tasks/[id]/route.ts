@@ -5,7 +5,7 @@ import {
 } from "../../../../lib/tasks/store";
 import { logApiError } from "../../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../../lib/security/api-token";
-import { requireUserIdForSupabase, resolveRequestUserId } from "../../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestScope } from "../../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   updateTaskFieldsInSupabase,
@@ -16,9 +16,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   try {
@@ -37,14 +37,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const showOnLockScreen = hasShowOnLockScreen ? Boolean(body?.showOnLockScreen) : undefined;
 
     if (hasSupabaseEnv()) {
-      const required = requireUserIdForSupabase(user.userId);
+      const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
       if (!required.ok) {
         return Response.json({ error: required.message }, { status: 400 });
       }
       const updated = await updateTaskFieldsInSupabase(params.id, {
         ...(hasIsCompleted ? { is_completed: isCompleted } : {}),
         ...(hasShowOnLockScreen ? { show_on_lock_screen: showOnLockScreen } : {}),
-      }, user.userId);
+      }, scope);
       return Response.json({ item: updated[0] ?? updated });
     }
 
@@ -68,7 +68,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     logApiError({
       endpoint: "/api/tasks/[id]",
       method: "PATCH",
-      userId: user.userId,
+      userId: scope.userId,
       stage: "patch_task",
       error,
     });

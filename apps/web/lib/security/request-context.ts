@@ -33,12 +33,53 @@ export function resolveRequestUserId(request: Request) {
   return { ok: true as const, userId };
 }
 
-export function requireUserIdForSupabase(userId: string | null | undefined) {
-  if (!userId) {
+export function resolveSupabaseAccessToken(request: Request) {
+  const authorization = request.headers.get("authorization")?.trim() ?? "";
+  if (!authorization) return null;
+
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+
+  const token = match[1]?.trim();
+  return token ? token : null;
+}
+
+function decodeJwtSub(accessToken: string | null) {
+  if (!accessToken) return null;
+  const parts = accessToken.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payloadBase64.padEnd(Math.ceil(payloadBase64.length / 4) * 4, "=");
+    const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as { sub?: unknown };
+    const sub = typeof payload?.sub === "string" ? payload.sub.trim() : "";
+    if (!sub || !UUID_V4_OR_V1.test(sub)) return null;
+    return sub;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveRequestScope(request: Request) {
+  const user = resolveRequestUserId(request);
+  if (!user.ok) return user;
+
+  const accessToken = resolveSupabaseAccessToken(request);
+  const tokenUserId = decodeJwtSub(accessToken);
+  return {
+    ok: true as const,
+    userId: user.userId ?? tokenUserId,
+    accessToken,
+  };
+}
+
+export function requireUserIdForSupabase(userId: string | null | undefined, accessToken?: string | null) {
+  if (!userId && !accessToken) {
     return {
       ok: false as const,
       message:
-        "\uC0AC\uC6A9\uC790 ID\uAC00 \uD544\uC218\uC785\uB2C8\uB2E4. x-notice-user-id \uD5E4\uB354\uB97C \uC124\uC815\uD558\uC138\uC694.",
+        "\uC0AC\uC6A9\uC790 ID \uB610\uB294 Supabase Access Token\uC774 \uD544\uC694\uD569\uB2C8\uB2E4. x-notice-user-id \uD5E4\uB354 \uB610\uB294 Authorization: Bearer <token>\uC744 \uC124\uC815\uD558\uC138\uC694.",
     };
   }
   return { ok: true as const };

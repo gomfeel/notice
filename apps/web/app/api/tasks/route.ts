@@ -1,7 +1,7 @@
 import { addTaskItem, listTaskItems } from "../../../lib/tasks/store";
 import { logApiError } from "../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
-import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestScope } from "../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   insertTaskToSupabase,
@@ -23,24 +23,24 @@ function isInvalidTimeRange(startsAt: string | null, endsAt: string | null) {
 }
 
 export async function GET(request: Request) {
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   if (hasSupabaseEnv()) {
-    const required = requireUserIdForSupabase(user.userId);
+    const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
     if (!required.ok) {
       return Response.json({ error: required.message }, { status: 400 });
     }
     try {
-      const result = await listTasksFromSupabase(50, user.userId);
+      const result = await listTasksFromSupabase(50, scope);
       return Response.json({ source: "supabase", items: result.items });
     } catch (error) {
       logApiError({
         endpoint: "/api/tasks",
         method: "GET",
-        userId: user.userId,
+        userId: scope.userId,
         stage: "list_tasks_supabase",
         error,
       });
@@ -56,9 +56,9 @@ export async function POST(request: Request) {
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   try {
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     }
 
     if (hasSupabaseEnv()) {
-      const required = requireUserIdForSupabase(user.userId);
+      const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
       if (!required.ok) {
         return Response.json({ error: required.message }, { status: 400 });
       }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         show_on_lock_screen: showOnLockScreen,
         starts_at: startsAt,
         ends_at: endsAt,
-      }, user.userId);
+      }, scope);
       return Response.json({ item: inserted[0] ?? inserted }, { status: 201 });
     }
 
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     logApiError({
       endpoint: "/api/tasks",
       method: "POST",
-      userId: user.userId,
+      userId: scope.userId,
       stage: "post_task",
       error,
     });

@@ -5,7 +5,7 @@ import { addIntakeItem, listIntakeItems } from "../../../lib/intake/store";
 import { fetchMetadataFromUrl } from "../../../lib/metadata/fetchMetadata";
 import { logApiError } from "../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
-import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestScope } from "../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   insertLinkToSupabase,
@@ -26,24 +26,24 @@ function isValidHttpUrl(value: string) {
 }
 
 export async function GET(request: Request) {
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   if (hasSupabaseEnv()) {
-    const required = requireUserIdForSupabase(user.userId);
+    const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
     if (!required.ok) {
       return Response.json({ error: required.message }, { status: 400 });
     }
     try {
-      const recent = await listRecentLinksFromSupabase(20, user.userId);
+      const recent = await listRecentLinksFromSupabase(20, scope);
       return Response.json({ source: "supabase", items: recent.items });
     } catch (error) {
       logApiError({
         endpoint: "/api/intake",
         method: "GET",
-        userId: user.userId,
+        userId: scope.userId,
         stage: "list_recent_links",
         error,
       });
@@ -59,9 +59,9 @@ export async function POST(request: Request) {
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   try {
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     const selectedFolder = folders.find((folder: { id?: string; name: string }) => folder.name === selectedFolderName);
 
     if (hasSupabaseEnv()) {
-      const required = requireUserIdForSupabase(user.userId);
+      const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
       if (!required.ok) {
         return Response.json({ error: required.message }, { status: 400 });
       }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       title: finalTitle,
       summary: finalDescription,
       status: "unread",
-    }, user.userId);
+    }, scope);
 
     const item = {
       id: randomUUID(),
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     logApiError({
       endpoint: "/api/intake",
       method: "POST",
-      userId: user.userId,
+      userId: scope.userId,
       stage: "post_intake",
       error,
     });

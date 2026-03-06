@@ -1,7 +1,7 @@
 import { updateIntakeStatus } from "../../../../lib/intake/store";
 import { logApiError } from "../../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../../lib/security/api-token";
-import { requireUserIdForSupabase, resolveRequestUserId } from "../../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestScope } from "../../../../lib/security/request-context";
 import {
   hasSupabaseEnv,
   updateLinkStatusInSupabase,
@@ -12,9 +12,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   try {
@@ -22,11 +22,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const status = body?.status === "read" ? "read" : "unread";
 
     if (hasSupabaseEnv()) {
-      const required = requireUserIdForSupabase(user.userId);
+      const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
       if (!required.ok) {
         return Response.json({ error: required.message }, { status: 400 });
       }
-      const updated = await updateLinkStatusInSupabase(params.id, status, user.userId);
+      const updated = await updateLinkStatusInSupabase(params.id, status, scope);
       return Response.json({ item: updated[0] ?? updated });
     }
 
@@ -36,7 +36,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     logApiError({
       endpoint: "/api/intake/[id]",
       method: "PATCH",
-      userId: user.userId,
+      userId: scope.userId,
       stage: "patch_intake_status",
       error,
     });

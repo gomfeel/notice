@@ -1,28 +1,28 @@
 import { addFolderItem, listFolderItems } from "../../../lib/folders/store";
 import { logApiError } from "../../../lib/observability/api-log";
 import { authorizeApiRequest } from "../../../lib/security/api-token";
-import { requireUserIdForSupabase, resolveRequestUserId } from "../../../lib/security/request-context";
+import { requireUserIdForSupabase, resolveRequestScope } from "../../../lib/security/request-context";
 import { hasSupabaseEnv, insertFolderToSupabase, listFoldersFromSupabase } from "../../../lib/supabase/rest";
 
 export async function GET(request: Request) {
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   if (hasSupabaseEnv()) {
-    const required = requireUserIdForSupabase(user.userId);
+    const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
     if (!required.ok) {
       return Response.json({ error: required.message }, { status: 400 });
     }
     try {
-      const result = await listFoldersFromSupabase(user.userId);
+      const result = await listFoldersFromSupabase(scope);
       return Response.json({ source: "supabase", items: result.items });
     } catch (error) {
       logApiError({
         endpoint: "/api/folders",
         method: "GET",
-        userId: user.userId,
+        userId: scope.userId,
         stage: "list_folders_supabase",
         error,
       });
@@ -38,9 +38,9 @@ export async function POST(request: Request) {
   if (!auth.ok) {
     return Response.json({ error: auth.message }, { status: 401 });
   }
-  const user = resolveRequestUserId(request);
-  if (!user.ok) {
-    return Response.json({ error: user.message }, { status: 400 });
+  const scope = resolveRequestScope(request);
+  if (!scope.ok) {
+    return Response.json({ error: scope.message }, { status: 400 });
   }
 
   try {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const { name, description } = body;
 
     if (hasSupabaseEnv()) {
-      const required = requireUserIdForSupabase(user.userId);
+      const required = requireUserIdForSupabase(scope.userId, scope.accessToken);
       if (!required.ok) {
         return Response.json({ error: required.message }, { status: 400 });
       }
@@ -58,14 +58,14 @@ export async function POST(request: Request) {
             name: String(name ?? ""),
             icon: description ? String(description) : null,
           },
-          user.userId
+          scope
         );
         return Response.json({ source: "supabase", item: inserted[0] ?? inserted }, { status: 201 });
       } catch (error) {
         logApiError({
           endpoint: "/api/folders",
           method: "POST",
-          userId: user.userId,
+          userId: scope.userId,
           stage: "insert_folder_supabase",
           error,
         });
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     logApiError({
       endpoint: "/api/folders",
       method: "POST",
-      userId: user.userId,
+      userId: scope.userId,
       stage: "post_folder",
       error,
     });
